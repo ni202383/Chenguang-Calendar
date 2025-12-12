@@ -1,0 +1,107 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "module description"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "description"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "辰光日历"
+    },
+    {
+      "name": "gray_deeper_in_other_month",
+      "value": "rgba(77,77,77,0.1)"
+    },
+    {
+      "name": "gray_deeper_in_weekend",
+      "value": "rgba(77,77,77,0.4)"
+    },
+    {
+      "name": "EntryFormAbility_desc",
+      "value": "form_description"
+    },
+    {
+      "name": "EntryFormAbility_label",
+      "value": "form_label"
+    },
+    {
+      "name": "widget_desc",
+      "value": "This is a service widget."
+    },
+    {
+      "name": "widget_display_name",
+      "value": "widget"
+    },
+    {
+      "name": "widget1_desc",
+      "value": "This is a service widget."
+    },
+    {
+      "name": "widget1_display_name",
+      "value": "widget1"
+    },
+    {
+      "name": "card_list_title",
+      "value": "Title"
+    },
+    {
+      "name": "card_list_content",
+      "value": "Introduction"
+    },
+    {
+      "name": "widget_search",
+      "value": "discover more"
+    },
+    {
+      "name": "widget_explored",
+      "value": "explored"
+    },
+    {
+      "name": "widget_study",
+      "value": "study"
+    },
+    {
+      "name": "widget_activity",
+      "value": "activity"
+    },
+    {
+      "name": "widget_mine",
+      "value": "mine"
+    },
+    {
+      "name": "widget_more",
+      "value": "more Info"
+    },
+    {
+      "name": "todayInfo_desc",
+      "value": "This is the information in date today."
+    },
+    {
+      "name": "todayInfo_display_name",
+      "value": "todayInfo"
+    },
+    {
+      "name": "EntryFormAbilityDate_desc",
+      "value": "form_description"
+    },
+    {
+      "name": "EntryFormAbilityDate_label",
+      "value": "form_label"
+    },
+    {
+      "name": "dateInfo_desc",
+      "value": "This is the date information today."
+    },
+    {
+      "name": "dateInfo_display_name",
+      "value": "dateInfo"
+    },{
+      "name": "reason",
+      "value": "remind the daily schedule"
+    }
+  ]
+}

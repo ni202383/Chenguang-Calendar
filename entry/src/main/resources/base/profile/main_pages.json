@@ -1,0 +1,7 @@
+{
+  "src": [
+    "pages/Start",
+    "pages/AlmanacAllData",
+    "pages/Settings"
+  ]
+}
