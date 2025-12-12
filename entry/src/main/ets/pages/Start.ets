@@ -382,6 +382,8 @@ struct Start {
             YearView({
               currentIndex: this.currentIndexInYearView,
               currentIndexInTotalPage: this.currentIndex,
+              currentYearInMonthView : this.currentYearInMonthView,
+              currentMonthInMonthView : this.currentMonthInMonthView
             })
           }
           .tabBar(this.tabsBuilder('年', StartArkUISizeConstant.TABS_INDEX_YEAR))

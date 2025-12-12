@@ -5,7 +5,6 @@ import { monthDiff } from "../../Utils/ViewUtils";
 import { DailyInfoBase } from "../Model/DailyInfoBase";
 import { PerMonthInfoInYearView } from "../Model/PerMonthInfoInYearView";
 import { PerYearInfo } from "../Model/PerYearInfo";
-import { MonthDataSource } from "../ViewModel/DataSource/MonthDataSource";
 import { YearDataSource } from "../ViewModel/DataSource/YearDataSource";
 
 @Component
@@ -22,6 +21,8 @@ export struct YearView {
   @StorageProp(BreakpointConstant.CURRENT_BREAKPOINT) currentBreakpoint : string = BreakpointConstant.BREAKPOINT_SM;
   @StorageLink('changeSwiperIndexInMonth') changeSwiperIndexInMonth : boolean = false;//信号量
   @StorageLink('changeTabsIndex') changeTabsIndex : boolean = false;//信号量
+  @Link currentYearInMonthView : number;
+  @Link currentMonthInMonthView : number;
 
   aboutToAppear(): void {
     this.preIndex = this.currentIndex;
@@ -159,6 +160,8 @@ export struct YearView {
                   .onClick((event : ClickEvent) => {
                       this.currentIndexInTotalPage = ViewArkUIConstant.YEAR_VIEW_GRID_ITEM_CLICK_TARGET_TABS_INDEX;
                       const offsetMonths = monthDiff(new Date().getFullYear(),new Date().getMonth() + 1,perYearInfo.getYear(),perMonthInfo.getMonth());
+                      this.currentYearInMonthView = perYearInfo.getYear();
+                      this.currentMonthInMonthView = perMonthInfo.getMonth();
                       this.currentIndexInMonthView = BasicConstant.MONTH_DATASOURCE_INITIAL_INDEX - offsetMonths;
                   })
 

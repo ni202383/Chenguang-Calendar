@@ -621,7 +621,9 @@ export struct RealDailyScheduleWithoutScroll {
         if (this.remindTimeArray.length == 0) {
           Column() {
             Image($r('app.media.empty_notification'))
-              .width(BasicConstant.HALF_WIDTH)
+              .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ?
+               ViewArkUIConstant.TASK_DETAIL_NONE_SET_TASK_IMAGE_WIDTH_PERCENTAGE  :
+                BasicConstant.HALF_WIDTH)
           }
           .width(BasicConstant.FULL_WIDTH)
           .height(ViewArkUIConstant.TASK_DETAIL_NONE_SET_REMINDER_COLUMN_HEIGHT)
