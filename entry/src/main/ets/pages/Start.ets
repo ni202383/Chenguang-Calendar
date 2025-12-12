@@ -293,14 +293,22 @@ struct Start {
                   .onClick((event: ClickEvent) => {
                       if (this.currentIndex == StartArkUISizeConstant.TABS_INDEX_MONTH) {
                         this.currentIndexInMonthView = this.monthDataSource.getInitialIndex();
+                        this.currentYearInMonthView = new Date().getFullYear();
+                        this.currentMonthInMonthView = new Date().getMonth() + 1;
                         this.selectedDayInMonthView = new Date().getDate();
                       } else if (this.currentIndex == StartArkUISizeConstant.TABS_INDEX_WEEK) {
                         this.currentIndexInWeekView = this.weekDataSource.getInitialIndex();
+                        this.currentYearInWeekView = new Date().getFullYear();
+                        this.currentMonthInWeekView = new Date().getMonth() + 1;
                         this.selectedDayInWeekView = new Date().getDate();
                       } else if (this.currentIndex == StartArkUISizeConstant.TABS_INDEX_DAY) {
                         this.currentIndexInDayView = this.dayDataSource.getInitialIndex();
+                        this.currentYearInDayView = new Date().getFullYear();
+                        this.currentMonthInDayView = new Date().getMonth() + 1;
+                        this.currentDayInDayView = new Date().getDate();
                       } else if (this.currentIndex == StartArkUISizeConstant.TABS_INDEX_YEAR) {
                         this.currentIndexInYearView = this.yearDataSource.getInitialIndex();
+                        this.currentYearInYearView = new Date().getFullYear();
                       }
                   })
               }
