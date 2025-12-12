@@ -15,7 +15,7 @@ import { DayView } from './View/DayView';
 import { YearDataSource } from './ViewModel/DataSource/YearDataSource';
 import { YearView } from './View/YearView';
 import { DailyTaskItemDetail } from './View/DailyTask/DailyTaskItemDetail';
-import { StartArkUISizeConstant } from '../Constants/ArkUIConstant';
+import { StartArkUISizeConstant, ViewArkUIConstant } from '../Constants/ArkUIConstant';
 
 @Builder
 export function dailySchedule() {
@@ -398,8 +398,8 @@ struct Start {
         .width(BasicConstant.FULL_WIDTH)
         .barWidth(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? BasicConstant.HALF_WIDTH :
           BasicConstant.FULL_WIDTH)
-        .height('auto')
-        // .margin({ top: this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 0 : 2 })
+        .margin({ top: this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ?
+          StartArkUISizeConstant.TABS_MARGIN_TOP_LG : StartArkUISizeConstant.TABS_MARGIN_TOP_OTHER })
         .scrollable(false)
         .onAnimationStart((fromIndex : number,toIndex : number) => {
           this.currentIndex = toIndex;

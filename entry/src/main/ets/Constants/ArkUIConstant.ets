@@ -16,6 +16,8 @@ export class StartArkUISizeConstant{
   static readonly TABS_INDEX_YEAR = 0;
   static readonly TABS_INDEX_WEEK = 2;
   static readonly TABS_INDEX_DAY = 3;
+  static readonly TABS_MARGIN_TOP_LG = 0;
+  static readonly TABS_MARGIN_TOP_OTHER = 2;
   static readonly THREE_BUTTON_GAP_SPACE = 15;
   static readonly BUTTON_TODAY_FONTSIZE_SM = 20;
   static readonly BUTTON_TODAY_FONTSIZE_OTHER = 25;
