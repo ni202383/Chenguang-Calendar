@@ -671,6 +671,9 @@ export struct RealDailyScheduleWithoutScroll {
           .margin({ top: ViewArkUIConstant.TASK_DETAIL_ENSURE_BUTTON_MARGIN_TOP })
           .onClick((event: ClickEvent) => {
             this.newDailySchedule.setRemindTime(this.remindTimeArray);
+            if(this.newDailySchedule.getDetail() == ''){
+              this.newDailySchedule.setDetail("愿辰光照你，心里有方向；愿你所做皆有回响，所盼终将抵达~");
+            }
             if (this.newDailySchedule.getTitle() == '' || this.newDailySchedule.getLocation() == '' ||
               !isNormalTimeSchedule(
                 this.newDailySchedule.getBeginHour(),
