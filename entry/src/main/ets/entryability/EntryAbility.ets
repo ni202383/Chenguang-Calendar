@@ -53,7 +53,7 @@ export default class EntryAbility extends UIAbility {
         { key: 'themeColor',  defaultValue: '#EA5C2E' },
         { key: 'isSubscribe', defaultValue: true },
         { key: 'isSetChangingNewTaskButton', defaultValue: true},
-        {key: 'changingNewTaskButtonHandingStatus', defaultValue: true}
+        { key: 'changingNewTaskButtonHandingStatus', defaultValue: true}
       ]);
 
       hilog.info(DOMAIN, 'testTag', 'Succeeded in loading the content.');

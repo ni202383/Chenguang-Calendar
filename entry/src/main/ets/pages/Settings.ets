@@ -123,6 +123,7 @@ struct Settings {
           ListItem(){
             this.settingItem('是否开启底部添加日程按钮',this.isSetChangingNewTaskButton,(isOn : boolean) => {
               this.isSetChangingNewTaskButton = isOn;
+              this.changingNewTaskButtonHandingStatus = isOn;
             })
           }
 
