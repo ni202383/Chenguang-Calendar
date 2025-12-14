@@ -382,6 +382,13 @@ export class ViewArkUIConstant{
   static readonly COLOR_PICKER_DIALOG_WIDTH_PERCENTAGE = '80%';
   static readonly COLOR_PICKER_DIALOG_CORNER_RADIUS = 15;
   static readonly DAY_VIEW_MARGIN_BOTTOM = 50;
+  static readonly BOTTOM_BUTTON_WIDTH_HEIGHT_SM = 40;
+  static readonly BOTTOM_BUTTON_WIDTH_HEIGHT_MD = 50;
+  static readonly BOTTOM_BUTTON_WIDTH_HEIGHT_LG = 60;
+  static readonly BOTTOM_BUTTON_Y_OFFSET = -125;
+  static readonly BOTTOM_BUTTON_X_LEFT_HAND_OFFSET = -275;
+  static readonly BOTTOM_BUTTON_X_RIGHT_HAND_OFFSET = -30;
+  static readonly BOTTOM_BUTTON_X_OTHER_AND_DEFAULT_OFFSET = -150;
 
 }
 

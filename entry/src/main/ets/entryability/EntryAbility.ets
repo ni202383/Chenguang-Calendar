@@ -50,8 +50,10 @@ export default class EntryAbility extends UIAbility {
       }
 
       PersistentStorage.PersistProps([
-        { key: 'themeColor',  defaultValue: '#EA5C2E' }, // 你的默认主题色
-        { key: 'isSubscribe', defaultValue: true }      // 默认未订阅
+        { key: 'themeColor',  defaultValue: '#EA5C2E' },
+        { key: 'isSubscribe', defaultValue: true },
+        { key: 'isSetChangingNewTaskButton', defaultValue: true},
+        {key: 'changingNewTaskButtonHandingStatus', defaultValue: true}
       ]);
 
       hilog.info(DOMAIN, 'testTag', 'Succeeded in loading the content.');

@@ -16,6 +16,8 @@ import { YearDataSource } from './ViewModel/DataSource/YearDataSource';
 import { YearView } from './View/YearView';
 import { DailyTaskItemDetail } from './View/DailyTask/DailyTaskItemDetail';
 import { StartArkUISizeConstant, ViewArkUIConstant } from '../Constants/ArkUIConstant';
+import {motion} from '@kit.MultimodalAwarenessKit'
+import {BusinessError} from '@kit.BasicServicesKit'
 
 @Builder
 export function dailySchedule() {
@@ -89,6 +91,27 @@ struct Start {
   @StorageProp('bottomStatusBarHeight') bottomStatusBarHeight : number = 0;//底部状态栏高度
   @StorageLink('showDetail') showDetail : boolean = false;
   @StorageProp('clickedTask') clickedTask : Task = new Task();
+  @State currentHandingStatus : motion.HoldingHandStatus = motion.HoldingHandStatus.NOT_HELD;
+  private callback : Callback<motion.HoldingHandStatus> = (handingStatus : motion.HoldingHandStatus) => {
+    this.currentHandingStatus = handingStatus;
+  }
+  @StorageProp('isSetChangingNewTaskButton') isSetChangingNewTaskButton : boolean = true;
+  @StorageProp('changingNewTaskButtonHandingStatus') @Watch('updateBottomNewTaskButtonHandingStatus')
+  changingNewTaskButtonHandingStatus : boolean = true;
+
+  updateBottomNewTaskButtonHandingStatus(){
+    try {
+      if(this.changingNewTaskButtonHandingStatus){
+        motion.on('holdingHandChanged',this.callback);
+      } else {
+        motion.off('holdingHandChanged');
+        this.currentHandingStatus = motion.HoldingHandStatus.NOT_HELD;
+      }
+    }catch (err){
+      let error = err as BusinessError;
+      console.error("Failed on and err code is " + error.code);
+    }
+  }
 
   updateTabsIndex(){
     this.tabsController.changeIndex(this.currentIndex);
@@ -172,6 +195,13 @@ struct Start {
         }
       })
       .build()
+    try{
+      motion.on('holdingHandChanged',this.callback);
+      console.log(`currentHandingStatus:begin}`);
+    }catch (err) {
+      let error = err as BusinessError;
+      console.error("Failed on and err code is " + error.code);
+    }
   }
 
   aboutToDisappear(): void {
@@ -419,6 +449,39 @@ struct Start {
       }
       .width(BasicConstant.FULL_WIDTH)
       .height(BasicConstant.FULL_HEIGHT)
+
+      if(this.isSetChangingNewTaskButton){
+        Button(){
+          Image($r('app.media.plus_white'))
+            .width('85%')
+        }
+        .type(ButtonType.Circle)
+        .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ? ViewArkUIConstant.BOTTOM_BUTTON_WIDTH_HEIGHT_SM :
+          this.currentBreakpoint == BreakpointConstant.BREAKPOINT_MD ? ViewArkUIConstant.BOTTOM_BUTTON_WIDTH_HEIGHT_MD :
+            ViewArkUIConstant.BOTTOM_BUTTON_WIDTH_HEIGHT_LG)
+        .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ? ViewArkUIConstant.BOTTOM_BUTTON_WIDTH_HEIGHT_SM :
+          this.currentBreakpoint == BreakpointConstant.BREAKPOINT_MD ? ViewArkUIConstant.BOTTOM_BUTTON_WIDTH_HEIGHT_MD :
+            ViewArkUIConstant.BOTTOM_BUTTON_WIDTH_HEIGHT_LG)
+        .backgroundColor(this.themeColor)
+        .alignRules({
+          bottom : {anchor : '__container__',align : VerticalAlign.Bottom},
+          right : {anchor : '__container__',align : HorizontalAlign.End}
+        })
+        .offset({
+          x : this.currentHandingStatus == motion.HoldingHandStatus.LEFT_HAND_HELD ?
+            ViewArkUIConstant.BOTTOM_BUTTON_X_LEFT_HAND_OFFSET : this.currentHandingStatus ==
+            motion.HoldingHandStatus.RIGHT_HAND_HELD ? ViewArkUIConstant.BOTTOM_BUTTON_X_RIGHT_HAND_OFFSET :
+              ViewArkUIConstant.BOTTOM_BUTTON_X_OTHER_AND_DEFAULT_OFFSET,
+          y : ViewArkUIConstant.BOTTOM_BUTTON_Y_OFFSET
+        })
+        .onClick((event : ClickEvent) => {
+          this.adjustSheetDialog?.show();
+        })
+        .animation({
+          curve : Curve.EaseInOut,
+          duration : BasicConstant.ANIMATION_DURATION_SHORT
+        })
+      }
 
       if (this.showDetail) {
         DailyTaskItemDetail({ task: this.clickedTask, showDetail: this.showDetail })

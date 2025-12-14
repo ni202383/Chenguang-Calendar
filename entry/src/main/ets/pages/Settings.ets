@@ -12,6 +12,8 @@ struct Settings {
   @StorageProp(BreakpointConstant.CURRENT_BREAKPOINT) currentBreakpoint : string = BreakpointConstant.BREAKPOINT_SM;
   @StorageLink('isSubscribe') @Watch('onDataChange') isSubscribe : boolean = true;
   @StorageLink('themeColor') themeColor : string = '';
+  @StorageLink('isSetChangingNewTaskButton') isSetChangingNewTaskButton : boolean = true;
+  @StorageLink('changingNewTaskButtonHandingStatus') changingNewTaskButtonHandingStatus : boolean = true;
 
   /*
   *设置主题色，是否显示黄历。
@@ -67,13 +69,13 @@ struct Settings {
     backgroundColor : Color.White
   })
 
-  @Builder settingItem(text : string,things : (isOn : boolean) => void){
+  @Builder settingItem(text : string,initStatus : boolean,things : (isOn : boolean) => void){
     Row(){
       Text(text)
         .fontSize(ViewArkUIConstant.SETTING_IS_ALMANAC_FONT_SIZE)
         .fontColor(Color.Black)
 
-      Toggle({type : ToggleType.Switch,isOn : this.isSubscribe})
+      Toggle({type : ToggleType.Switch,isOn : initStatus})
         .selectedColor(this.themeColor)
         .switchPointColor(Color.White)
         .onChange((isOn) => {
@@ -113,8 +115,25 @@ struct Settings {
 
         List({ space: ViewArkUIConstant.SETTING_LIST_SPACE }) {
           ListItem() {
-            this.settingItem('是否显示黄历',async (isOn: boolean) => {
+            this.settingItem('是否显示黄历',this.isSubscribe,async (isOn: boolean) => {
               this.isSubscribe = isOn;
+            })
+          }
+
+          ListItem(){
+            this.settingItem('是否开启底部添加日程按钮',this.isSetChangingNewTaskButton,(isOn : boolean) => {
+              this.isSetChangingNewTaskButton = isOn;
+            })
+          }
+
+          if(this.isSetChangingNewTaskButton){
+            this.settingItem('质感握姿',this.changingNewTaskButtonHandingStatus,(isOn : boolean) => {
+              this.getUIContext().animateTo({
+                duration :300,
+                curve : Curve.EaseInOut
+              },() => {
+                this.changingNewTaskButtonHandingStatus = isOn;
+              })
             })
           }
 
