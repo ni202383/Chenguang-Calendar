@@ -127,7 +127,7 @@ struct Settings {
           }
 
           if(this.isSetChangingNewTaskButton){
-            this.settingItem('质感握姿',this.changingNewTaskButtonHandingStatus,(isOn : boolean) => {
+            this.settingItem('智感握姿',this.changingNewTaskButtonHandingStatus,(isOn : boolean) => {
               this.getUIContext().animateTo({
                 duration :300,
                 curve : Curve.EaseInOut
