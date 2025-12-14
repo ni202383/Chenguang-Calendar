@@ -195,12 +195,14 @@ struct Start {
         }
       })
       .build()
-    try{
-      motion.on('holdingHandChanged',this.callback);
-      console.log(`currentHandingStatus:begin}`);
-    }catch (err) {
-      let error = err as BusinessError;
-      console.error("Failed on and err code is " + error.code);
+    if(this.changingNewTaskButtonHandingStatus){
+      try{
+        motion.on('holdingHandChanged',this.callback);
+        console.log(`currentHandingStatus:begin}`);
+      }catch (err) {
+        let error = err as BusinessError;
+        console.error("Failed on and err code is " + error.code);
+      }
     }
   }
 

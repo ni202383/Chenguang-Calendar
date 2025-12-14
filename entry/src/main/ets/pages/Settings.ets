@@ -122,19 +122,19 @@ struct Settings {
 
           ListItem(){
             this.settingItem('是否开启底部添加日程按钮',this.isSetChangingNewTaskButton,(isOn : boolean) => {
-              this.isSetChangingNewTaskButton = isOn;
-              this.changingNewTaskButtonHandingStatus = isOn;
+              this.getUIContext().animateTo({
+                duration : BasicConstant.ANIMATION_DURATION_SHORT,
+                curve : Curve.EaseInOut
+              },() => {
+                this.isSetChangingNewTaskButton = isOn;
+                this.changingNewTaskButtonHandingStatus = isOn;
+              })
             })
           }
 
           if(this.isSetChangingNewTaskButton){
-            this.settingItem('智感握姿',this.changingNewTaskButtonHandingStatus,(isOn : boolean) => {
-              this.getUIContext().animateTo({
-                duration :300,
-                curve : Curve.EaseInOut
-              },() => {
-                this.changingNewTaskButtonHandingStatus = isOn;
-              })
+            this.settingItem('智感握姿（仅部分机型支持）',this.changingNewTaskButtonHandingStatus,(isOn : boolean) => {
+              this.changingNewTaskButtonHandingStatus = isOn;
             })
           }
 
