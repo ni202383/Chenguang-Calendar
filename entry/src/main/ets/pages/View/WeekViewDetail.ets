@@ -1,14 +1,20 @@
 import { BasicConstant } from "../../Constants/BasicConstant";
 import { BreakpointConstant } from "../../Constants/BreakpointConstant";
-import { addTransparency,
-  currentDateDiff,
-  hexToRgb, number2CharacterInLunarMonth, number2characterInWeek } from "../../Utils/ViewUtils";
+import {currentDateDiff, hexToRgb, number2CharacterInLunarMonth, number2characterInWeek } from "../../Utils/ViewUtils";
 import { DailyInfo } from "../Model/DailyInfo";
 import { PerWeekInfo } from "../Model/PerWeekInfo";
 import { WeekDataSource } from "../ViewModel/DataSource/WeekDataSource";
-import { router } from "@kit.ArkUI";
-import { DailyTaskList } from "./DailyTask/DailyTaskList";
 import { ViewArkUIConstant } from "../../Constants/ArkUIConstant";
+import { Festival_SolarTerms } from "../Model/Festival_SolarTerms";
+import { TaskListGrid } from "./DailyTask/TaskListGrid";
+
+@Extend(ListItem) function ListItemStyle() {
+  .height(100)
+  .width('98%')
+  .padding(10)
+  .backgroundColor(Color.White)
+  .borderRadius(15)
+}
 
 @Component
 export struct WeekViewDetail{
@@ -35,6 +41,8 @@ export struct WeekViewDetail{
   @StorageProp('AlmanacRed') AlmanacRed : string = '#D31319';
   private weekDataSource : WeekDataSource = new WeekDataSource(this.currentYear,this.currentMonth,this.selectedDay)
   @State currentDailyInfo : DailyInfo = this.weekDataSource.getData(24000).getWeekData()[0];
+  private festivalList : Array<Festival_SolarTerms> = [];
+  private solarTermsList : Array<Festival_SolarTerms> = [];
 
   aboutToAppear(): void {
     this.currentYear = this.perWeekInfo.getYear();
@@ -47,6 +55,36 @@ export struct WeekViewDetail{
       }
     }
     this.themeColorChange();
+    this.discoverAllFestivalThisWeek();
+    this.discoverAllSolarTermsThisWeek();
+  }
+
+  discoverAllFestivalThisWeek(){
+    this.festivalList = [];
+    for(const dailyInfo of this.perWeekInfo.getWeekData()){
+      if(dailyInfo.getFestival().length > 0){
+        for(const festival of dailyInfo.getFestival()){
+          this.festivalList.push(new Festival_SolarTerms(
+            festival,
+            `${dailyInfo.getYear()}年${dailyInfo.getMonth()}月${dailyInfo.getDay()}日`,
+            `周${number2characterInWeek[dailyInfo.getWeek()]}`
+          ))
+        }
+      }
+    }
+  }
+
+  discoverAllSolarTermsThisWeek(){
+    this.solarTermsList = [];
+    for(const dailyInfo of this.perWeekInfo.getWeekData()){
+      if(dailyInfo.getSolarTerm() != ''){
+        this.solarTermsList.push(new Festival_SolarTerms(
+          dailyInfo.getSolarTerm(),
+          `${dailyInfo.getYear()}年${dailyInfo.getMonth()}月${dailyInfo.getDay()}日`,
+          `周${number2characterInWeek[dailyInfo.getWeek()]}`
+        ))
+      }
+    }
   }
 
   updateCurrentDailyInfo(): void {
@@ -88,10 +126,36 @@ export struct WeekViewDetail{
       dailyInfo.getWeek() == 6) return this.lunarTextColorInWeekend; else return this.lunarTextColor;
   }
 
+  @Builder noFestival_SolarTerms(text : string){
+    Column(){
+      Text(text)
+        .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ? 14 : 18)
+    }
+    .width(BasicConstant.FULL_WIDTH)
+    .height(BasicConstant.FULL_HEIGHT)
+    .justifyContent(FlexAlign.Center)
+    .alignItems(HorizontalAlign.Center)
+  }
+
+  @Builder haveFestival_SolarTerms(list : Array<Festival_SolarTerms>){
+    List({space : 5}){
+      ForEach(list,(item : Festival_SolarTerms,index : number) => {
+        ListItem(){
+          Text(`${index + 1}.${item.name} ${item.date} ${item.week}`)
+            .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ? 14 : 18)
+        }
+      },(item : Festival_SolarTerms) => item.name)
+    }
+    .width(BasicConstant.FULL_WIDTH)
+    .height(BasicConstant.FULL_HEIGHT)
+    .lanes(1)
+    .divider({strokeWidth : 1})
+  }
+
   build() {
     Column({space : ViewArkUIConstant.COMPONENT_GAP_SPACE}){
       Grid() {
-        ForEach(this.perWeekInfo.getWeekData(), (item: DailyInfo, index: number) => {
+        ForEach(this.perWeekInfo.getWeekData(), (item: DailyInfo) => {
           GridItem() {
             Stack({ alignContent: Alignment.Center }) {
               if (item.getIsSelectedAndAddThemeBackgroundColor()) {
@@ -195,241 +259,44 @@ export struct WeekViewDetail{
       .width(BasicConstant.FULL_WIDTH)
       .alignItems(VerticalAlign.Bottom)
 
-      if(this.currentDailyInfo.getFestival().length > 0){
-        Row({space : ViewArkUIConstant.FESTIVAL_ROW_GAP_SPACE}){
-          Column({space : ViewArkUIConstant.FESTIVAL_ROW_COLUMN_SPACE}){
-            Circle()
-              .width(
-                this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ? ViewArkUIConstant.FESTIVAL_ROW_COLUMN_CIRCLE_WIDTH_SM :
-                  this.currentBreakpoint == BreakpointConstant.BREAKPOINT_MD ? ViewArkUIConstant.FESTIVAL_ROW_COLUMN_CIRCLE_WIDTH_MD :
-                    ViewArkUIConstant.FESTIVAL_ROW_COLUMN_CIRCLE_WIDTH_LG
-              )
-              .height(
-                this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ? ViewArkUIConstant.FESTIVAL_ROW_COLUMN_CIRCLE_HEIGHT_SM :
-                  this.currentBreakpoint == BreakpointConstant.BREAKPOINT_MD ? ViewArkUIConstant.FESTIVAL_ROW_COLUMN_CIRCLE_HEIGHT_MD :
-                    ViewArkUIConstant.FESTIVAL_ROW_COLUMN_CIRCLE_HEIGHT_LG
-              )
-              .stroke(this.themeColor)
-              .fill(this.themeColor)
+      Text('本周节日和节气汇总')
+        .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ? 18 : 25)
+        .fontWeight(FontWeight.Bold)
 
-            Text(`全天`)
-              .fontSize(
-                this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ? ViewArkUIConstant.FESTIVAL_ROW_COLUMN_TEXT_FONT_SIZE_SM :
-                  this.currentBreakpoint == BreakpointConstant.BREAKPOINT_MD ? ViewArkUIConstant.FESTIVAL_ROW_COLUMN_TEXT_FONT_SIZE_MD :
-                    ViewArkUIConstant.FESTIVAL_ROW_COLUMN_TEXT_FONT_SIZE_LG
-              )
-              .fontColor(Color.Black)
-
+      List({space : 10}){
+        ListItem(){
+          if(this.festivalList.length == 0){
+            this.noFestival_SolarTerms('本周无主要节日')
+          } else {
+            this.haveFestival_SolarTerms(this.festivalList)
           }
-          // .width(30)
-
-          ForEach(this.currentDailyInfo.getFestival(),(item : string) => {
-            Text(item)
-              .fontSize(
-                this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ? ViewArkUIConstant.FESTIVAL_ROW_TEXT_FONT_SIZE_SM :
-                  this.currentBreakpoint == BreakpointConstant.BREAKPOINT_MD ? ViewArkUIConstant.FESTIVAL_ROW_TEXT_FONT_SIZE_MD :
-                    ViewArkUIConstant.FESTIVAL_ROW_TEXT_FONT_SIZE_LG
-              )
-              .fontColor(Color.Black)
-
-          },(item : string) => item)
         }
-        .width(BasicConstant.FULL_WIDTH)
-        .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ?
-          ViewArkUIConstant.FESTIVAL_ROW_HEIGHT_LG : ViewArkUIConstant.FESTIVAL_ROW_HEIGHT_OTHER)
-        .alignItems(VerticalAlign.Center)
-        .borderRadius(ViewArkUIConstant.FESTIVAL_ROW_BORDER_RADIUS)
-        .padding(ViewArkUIConstant.FESTIVAL_ROW_PADDING)
-        .backgroundColor(Color.White)
+        .ListItemStyle()
+
+        ListItem(){
+          if(this.solarTermsList.length == 0){
+            this.noFestival_SolarTerms('本周无主要节气')
+          } else {
+            this.haveFestival_SolarTerms(this.solarTermsList)
+          }
+        }
+        .ListItemStyle()
 
       }
+      .lanes(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ? 1 : 2)
 
-      if (this.isSubscribe) {
-        Column({ space: ViewArkUIConstant.ALMANAC_COLUMN_GAP_SPACE }) {
-          Row() {
-            Column({ space: ViewArkUIConstant.ALMANAC_BASIC_INFO_GAP_SPACE }) {
-              Text(`${this.currentDailyInfo.getMonth()}月${this.currentDailyInfo.getDay()}日 星期${number2characterInWeek[this.currentDailyInfo.getWeek()]}`)
-                .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-                  ViewArkUIConstant.ALMANAC_BASIC_SOLAR_INFO_FONT_SIZE_SM :
-                  ViewArkUIConstant.ALMANAC_BASIC_SOLAR_INFO_FONT_SIZE_OTHER)
-                .fontColor(Color.Black)
-              if (this.currentDailyInfo.getLunarMonth() < 0) {
-                Text(`闰${number2CharacterInLunarMonth[Math.abs(this.currentDailyInfo.getLunarMonth())]}月${this.currentDailyInfo.getLunarDateText()}`)
-                  .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-                    ViewArkUIConstant.ALMANAC_BASIC_LUNAR_TEXT_FONT_SIZE_SM :
-                    ViewArkUIConstant.ALMANAC_BASIC_LUNAR_TEXT_FONT_SIZE_OTHER)
-                  .fontColor(this.themeColor)
-                  .fontWeight(FontWeight.Bold)
-              } else {
-                Text(`${number2CharacterInLunarMonth[this.currentDailyInfo.getLunarMonth()]}月${this.currentDailyInfo.getLunarDateText()}`)
-                  .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-                    ViewArkUIConstant.ALMANAC_BASIC_LUNAR_TEXT_FONT_SIZE_SM :
-                    ViewArkUIConstant.ALMANAC_BASIC_LUNAR_TEXT_FONT_SIZE_OTHER)
-                  .fontColor(this.themeColor)
-                  .fontWeight(FontWeight.Bold)
-              }
-            }
-            .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-              ViewArkUIConstant.ALMANAC_BASIC_INFO_HEIGHT_SM : ViewArkUIConstant.ALMANAC_BASIC_INFO_HEIGHT_OTHER)
-            .alignItems(HorizontalAlign.Start)
-
-            Column({ space: ViewArkUIConstant.ALMANAC_GAN_ZHI_GAP_SPACE }) {
-              Column() {
-                Text('农历')
-                  .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-                    ViewArkUIConstant.ALMANAC_GAN_ZHI_LUNAR_FONT_SIZE_SM :
-                    ViewArkUIConstant.ALMANAC_GAN_ZHI_LUNAR_FONT_SIZE_OTHER)
-                  .fontColor(this.themeColor)
-                  .fontWeight(FontWeight.Medium)
-              }
-              .justifyContent(FlexAlign.Center)
-              .alignItems(HorizontalAlign.Center)
-              .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-                ViewArkUIConstant.ALMANAC_GAN_ZHI_LUNAR_WIDTH_SM : ViewArkUIConstant.ALMANAC_GAN_ZHI_LUNAR_WIDTH_OTHER)
-              .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-                ViewArkUIConstant.ALMANAC_GAN_ZHI_LUNAR_HEIGHT_SM: ViewArkUIConstant.ALMANAC_GAN_ZHI_LUNAR_HEIGHT_OTHER)
-              .borderRadius(ViewArkUIConstant.ALMANAC_GAN_ZHI_LUNAR_BORDER_RADIUS)
-              .backgroundColor(addTransparency(hexToRgb(this.themeColor),
-                ViewArkUIConstant.ALMANAC_GAN_ZHI_LUNAR_TRANSPARENCY))
-
-              Text(`${this.currentDailyInfo.getOrdinaryAlmanacOfDay()
-                .getMonthInGanZhi()}月 ${this.currentDailyInfo.getOrdinaryAlmanacOfDay()?.getDayInGanZhi()}日`)
-                .fontColor($r('app.color.gray_deeper'))
-                .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-                  ViewArkUIConstant.ALMANAC_GAN_ZHI_TEXT_FONT_SIZE_SM : ViewArkUIConstant.ALMANAC_GAN_ZHI_TEXT_FONT_SIZE_OTHER)
-              Text(`${this.currentDailyInfo.getOrdinaryAlmanacOfDay()
-                .getYearInGanZhi()}年[${this.currentDailyInfo.getOrdinaryAlmanacOfDay()?.getYearInShengXiao()}]`)
-                .fontColor($r('app.color.gray_deeper'))
-                .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-                  ViewArkUIConstant.ALMANAC_GAN_ZHI_TEXT_FONT_SIZE_SM : ViewArkUIConstant.ALMANAC_GAN_ZHI_TEXT_FONT_SIZE_OTHER)
-            }
-            .alignItems(HorizontalAlign.End)
-            .height(ViewArkUIConstant.ALMANAC_GAN_ZHI_INFO_HEIGHT)
-          }
-          .width(BasicConstant.FULL_WIDTH)
-          .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-            ViewArkUIConstant.ALMANAC_TOP_HEIGHT_SM : ViewArkUIConstant.ALMANAC_TOP_HEIGHT_OTHER)
-          .justifyContent(FlexAlign.SpaceBetween)
-          .alignItems(VerticalAlign.Top)
-
-          Row() {
-            Column() {
-              Row({ space: ViewArkUIConstant.ALMANAC_YI_JI_GAP_SPACE }) {
-                Stack() {
-                  Column()
-                    .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-                      ViewArkUIConstant.ALMANAC_YI_JI_SQUARE_WIDTH_HEIGHT_SM :
-                      ViewArkUIConstant.ALMANAC_YI_JI_SQUARE_WIDTH_HEIGHT_OTHER)
-                    .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-                      ViewArkUIConstant.ALMANAC_YI_JI_SQUARE_WIDTH_HEIGHT_SM :
-                      ViewArkUIConstant.ALMANAC_YI_JI_SQUARE_WIDTH_HEIGHT_OTHER)
-                    .backgroundColor(this.AlmanacYellow)
-                    .borderRadius(ViewArkUIConstant.ALMANAC_YI_JI_SQUARE_BORDER_RADIUS)
-                  Text('宜')
-                    .fontColor(Color.White)
-                    .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-                      ViewArkUIConstant.ALMANAC_YI_JI_FONT_SIZE_SM : ViewArkUIConstant.ALMANAC_YI_JI_FONT_SIZE_OTHER)
-                }
-
-                Text(this.currentDailyInfo.getOrdinaryAlmanacOfDay().getYi())
-                  .fontColor(this.AlmanacYellow)
-                  .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-                    ViewArkUIConstant.ALMANAC_YI_JI_TEXT_FONT_SIZE_SM : ViewArkUIConstant.ALMANAC_YI_JI_TEXT_FONT_SIZE_OTHER)
-                  .maxLines(ViewArkUIConstant.ALMANAC_YI_JI_TEXT_MAX_LINES)
-                  .textOverflow({ overflow: TextOverflow.Ellipsis })
-              }
-              .width(BasicConstant.FULL_WIDTH)
-              .height(BasicConstant.HALF_HEIGHT)
-              .justifyContent(FlexAlign.Start)
-              .alignItems(VerticalAlign.Center)
-
-              Row({ space: ViewArkUIConstant.ALMANAC_YI_JI_GAP_SPACE }) {
-                Stack() {
-                  Column()
-                    .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-                      ViewArkUIConstant.ALMANAC_YI_JI_SQUARE_WIDTH_HEIGHT_SM :
-                      ViewArkUIConstant.ALMANAC_YI_JI_SQUARE_WIDTH_HEIGHT_OTHER)
-                    .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-                      ViewArkUIConstant.ALMANAC_YI_JI_SQUARE_WIDTH_HEIGHT_SM :
-                      ViewArkUIConstant.ALMANAC_YI_JI_SQUARE_WIDTH_HEIGHT_OTHER)
-                    .backgroundColor(this.AlmanacRed)
-                    .borderRadius(ViewArkUIConstant.ALMANAC_YI_JI_SQUARE_BORDER_RADIUS)
-                  Text('忌')
-                    .fontColor(Color.White)
-                    .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-                      ViewArkUIConstant.ALMANAC_YI_JI_FONT_SIZE_SM : ViewArkUIConstant.ALMANAC_YI_JI_FONT_SIZE_OTHER)
-                }
-
-                Text(this.currentDailyInfo.getOrdinaryAlmanacOfDay().getJi())
-                  .fontColor($r('app.color.gray_deeper'))
-                  .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-                    ViewArkUIConstant.ALMANAC_YI_JI_TEXT_FONT_SIZE_SM : ViewArkUIConstant.ALMANAC_YI_JI_TEXT_FONT_SIZE_OTHER)
-                  .maxLines(ViewArkUIConstant.ALMANAC_YI_JI_TEXT_MAX_LINES)
-                  .textOverflow({ overflow: TextOverflow.Ellipsis })
-              }
-              .width(BasicConstant.FULL_WIDTH)
-              .height(BasicConstant.HALF_HEIGHT)
-              .alignItems(VerticalAlign.Center)
-              .justifyContent(FlexAlign.Start)
-            }
-            .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-              ViewArkUIConstant.ALMANAC_YI_JI_WHOLE_WIDTH_PERCENTAGE_SM :
-              ViewArkUIConstant.ALMANAC_YI_JI_WHOLE_WIDTH_PERCENTAGE_OTHER)
-            .height(BasicConstant.FULL_HEIGHT)
-
-            Column() {
-              Button('查看详情')
-                .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-                  ViewArkUIConstant.ALMANAC_VIEW_DETAIL_FONT_SIZE_SM : ViewArkUIConstant.ALMANAC_VIEW_DETAIL_FONT_SIZE_OTHER)
-                .width(ViewArkUIConstant.ALMANAC_VIEW_DETAIL_BUTTON_WIDTH_PERCENTAGE)
-                .height(ViewArkUIConstant.ALMANAC_VIEW_DETAIL_BUTTON_HEIGHT_PERCENTAGE)
-                .backgroundColor(this.themeColor)
-                .onClick((event: ClickEvent) => {
-                  this.getUIContext().getRouter().pushUrl({
-                    url: 'pages/AlmanacAllData',
-                    params: {
-                      currentYear: this.currentYear,
-                      currentMonth: this.currentMonth,
-                      currentDay: this.currentDailyInfo.getDay(),
-                      currentWeek: this.currentDailyInfo.getWeek(),
-                      currentLunarText: this.currentDailyInfo.getLunarDateText()
-                    }
-                  }, router.RouterMode.Standard, (error) => {
-                    if (error) {
-                      console.log(`error message : ${error.message}`)
-                    }
-                  })
-                })
-            }
-            .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-              ViewArkUIConstant.ALMANAC_VIEW_DETAIL_BUTTON_COLUMN_WIDTH_PERCENTAGE_SM :
-              ViewArkUIConstant.ALMANAC_VIEW_DETAIL_BUTTON_COLUMN_WIDTH_PERCENTAGE_OTHER)
-            .height(BasicConstant.FULL_HEIGHT)
-            .justifyContent(FlexAlign.Center)
-            .alignItems(HorizontalAlign.End)
-          }
-          .width(BasicConstant.FULL_WIDTH)
-          .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-            ViewArkUIConstant.ALMANAC_BOTTOM_ROW_HEIGHT_SM : ViewArkUIConstant.ALMANAC_BOTTOM_ROW_HEIGHT_OTHER)
-          .justifyContent(FlexAlign.Start)
-        }
-        .width(BasicConstant.FULL_WIDTH)
-        .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-          ViewArkUIConstant.ALMANAC_HEIGHT_SM : ViewArkUIConstant.ALMANAC_HEIGHT_OTHER)
-        .backgroundColor(Color.White)
-        .borderRadius(ViewArkUIConstant.ALMANAC_BORDER_RADIUS)
-        .padding(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-          ViewArkUIConstant.ALMANAC_PADDING_SM : ViewArkUIConstant.ALMANAC_PADDING_OTHER)
-      }
-
-      Text('日程')
+      Text('本周日程')
         .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
           ViewArkUIConstant.DAILY_SCHEDULE_TITLE_FONT_SIZE_SM : ViewArkUIConstant.DAILY_SCHEDULE_TITLE_FONT_SIZE_OTHER)
         .fontWeight(FontWeight.Bold)
-      DailyTaskList({
-        currentYear : this.currentYear,
-        currentMonth : this.currentMonth,
-        selectedDay : this.selectedDay,
+
+      TaskListGrid({
+        year : this.currentYear,
+        month : this.currentMonth,
+        day : this.selectedDay,
+        isWeeklyTaskTableMode : true,
+        isDailyTaskTableMode : false,
+        totalTableWidth : this.screenWidth - (this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ? 94 : 109),
       })
     }
     .width(BasicConstant.FULL_WIDTH)

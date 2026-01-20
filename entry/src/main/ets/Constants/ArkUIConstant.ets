@@ -73,7 +73,7 @@ export class ViewArkUIConstant{
   static readonly FESTIVAL_ROW_TEXT_FONT_SIZE_LG = 21;
   static readonly FESTIVAL_ROW_HEIGHT_LG = 80;
   static readonly FESTIVAL_ROW_HEIGHT_OTHER = 60;
-  static readonly FESTIVAL_ROW_BORDER_RADIUS = 15;
+  static readonly FESTIVAL_ROW_BORDER_RADIUS = 20;
   static readonly FESTIVAL_ROW_PADDING = 5;
   static readonly ALMANAC_COLUMN_GAP_SPACE = 5;
   static readonly ALMANAC_BASIC_INFO_GAP_SPACE = 12;
@@ -118,7 +118,7 @@ export class ViewArkUIConstant{
   static readonly ALMANAC_BOTTOM_ROW_HEIGHT_OTHER = 80;
   static readonly ALMANAC_HEIGHT_SM = 160;
   static readonly ALMANAC_HEIGHT_OTHER = 200;
-  static readonly ALMANAC_BORDER_RADIUS = 15;
+  static readonly ALMANAC_BORDER_RADIUS = 20;
   static readonly ALMANAC_PADDING_SM = 12;
   static readonly ALMANAC_PADDING_OTHER = 16;
   static readonly DAILY_SCHEDULE_TITLE_FONT_SIZE_SM = 18;
@@ -275,7 +275,7 @@ export class ViewArkUIConstant{
   static readonly TIME_YI_JI_WHOLE_HEIGHT = 105.5
 
   static readonly TASK_LIST_NONE_IMAGE_HEIGHT = 250;
-  static readonly TASK_LIST_ITEM_HEIGHT = 140;
+  static readonly TASK_LIST_ITEM_HEIGHT = 160;
   static readonly TASK_LIST_ITEM_ROWS_GAP = 10;
   static readonly TASK_LIST_ITEM_COLUMNS_GAP = 10;
   static readonly TASK_LIST_ITEM_WHOLE_COLUMN_GAP_SPACE = 10;

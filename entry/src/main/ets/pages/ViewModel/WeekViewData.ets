@@ -8,8 +8,6 @@ export function fetchWeekData(year : number,month : number,day : number) : Array
   let offsetStart = currentWeek;
   let offset = 1;
   let weekInfo : Array<DailyInfo> = [];
-  // let row = 1;
-  // let col = 1;
   for(let week = 0;week <= currentWeek;++week,--offsetStart){
     const dayDate = new Date(year,month - 1,day - offsetStart);
     if(dayDate >= firstDayInCurrentMonth){
@@ -17,7 +15,6 @@ export function fetchWeekData(year : number,month : number,day : number) : Array
     } else {
       weekInfo.push(fetchDayDateInfo(dayDate.getFullYear(),dayDate.getMonth() + 1,dayDate.getDate(),false,true));
     }
-    // row++;
   }
   for(let week = currentWeek + 1;week <= 6;++week,++offset){
     const dayDate = new Date(year,month - 1,day + offset);
@@ -26,7 +23,6 @@ export function fetchWeekData(year : number,month : number,day : number) : Array
     } else {
       weekInfo.push(fetchDayDateInfo(dayDate.getFullYear(),dayDate.getMonth() + 1,dayDate.getDate(),false,true));
     }
-    // col++;
   }
   return weekInfo;
 }

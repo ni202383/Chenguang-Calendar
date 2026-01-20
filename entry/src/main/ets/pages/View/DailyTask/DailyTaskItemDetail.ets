@@ -56,11 +56,11 @@ export struct DailyTaskItemDetail{
         value: '确定',
         fontColor: this.themeColor,
         action: () => {
-          this.returnEnsureSave = !this.returnEnsureSave;
           this.getUIContext().animateTo({
             duration : BasicConstant.ANIMATION_DURATION_LONG,
             curve : Curve.EaseInOut
           },() => {
+            this.returnEnsureSave = !this.returnEnsureSave;
             this.showDetail = false;
           })
         }
@@ -98,7 +98,6 @@ export struct DailyTaskItemDetail{
           }
           .width(BasicConstant.FULL_WIDTH)
           .justifyContent(FlexAlign.SpaceBetween)
-
           RealDailyScheduleWithoutScroll({//共用新建日程的组件
             newDailySchedule : this.task,
             isNewDailyTask : false,
@@ -120,7 +119,8 @@ export struct DailyTaskItemDetail{
     }
     .width(BasicConstant.FULL_WIDTH)
     .height(BasicConstant.FULL_HEIGHT)
-    .backgroundColor($r('app.color.backgroundcolor'))
+    .backgroundColor('rgba(255,255,255,0.3)')
+    .backgroundBlurStyle(BlurStyle.Thin)
     .geometryTransition(this.task.getId())
   }
 }

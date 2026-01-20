@@ -5,6 +5,12 @@ import {FormIdStore} from '../Utils/FormIdStore';
 import { formBindingData, formProvider } from '@kit.FormKit';
 import { ViewArkUIConstant } from '../Constants/ArkUIConstant';
 
+interface ItemType{
+  text : string;
+  initStatus : boolean;
+  things : (isOn : boolean) => void;
+}
+
 @Entry
 @Component
 struct Settings {
@@ -14,10 +20,7 @@ struct Settings {
   @StorageLink('themeColor') themeColor : string = '';
   @StorageLink('isSetChangingNewTaskButton') isSetChangingNewTaskButton : boolean = true;
   @StorageLink('changingNewTaskButtonHandingStatus') changingNewTaskButtonHandingStatus : boolean = true;
-
-  /*
-  *设置主题色，是否显示黄历。
-   */
+  @StorageProp('currentHandingStatusString') currentHandingStatusString : string = '智感握姿';
 
   onDataChange(){
     console.info(`[App] 状态变更为: ${this.isSubscribe}，准备同步所有组件`);
@@ -33,17 +36,14 @@ struct Settings {
       return;
     }
 
-    // 1. 创建更新数据包 (放在循环外创建一次即可)
     let dataObj = new Map<string, boolean>();
     dataObj.set('isSubscribe', this.isSubscribe);
     let formData = formBindingData.createFormBindingData(dataObj);
 
     console.info(`[App] 准备更新 ${formIds.length} 个小组件...`);
 
-    // 2. 🌟 关键修正：使用 for...of 循环和 await 确保顺序执行
     for (const formId of formIds) {
       try {
-        // 等待上一个小组件更新成功后，再执行下一个
         await formProvider.updateForm(formId, formData);
         console.info(`[App] 小组件 ${formId} 更新成功`);
       } catch (error) {
@@ -69,17 +69,17 @@ struct Settings {
     backgroundColor : Color.White
   })
 
-  @Builder settingItem(text : string,initStatus : boolean,things : (isOn : boolean) => void){
+  @Builder settingItem($$ : ItemType){
     Row(){
-      Text(text)
+      Text($$.text)
         .fontSize(ViewArkUIConstant.SETTING_IS_ALMANAC_FONT_SIZE)
         .fontColor(Color.Black)
 
-      Toggle({type : ToggleType.Switch,isOn : initStatus})
+      Toggle({type : ToggleType.Switch,isOn : $$.initStatus})
         .selectedColor(this.themeColor)
         .switchPointColor(Color.White)
         .onChange((isOn) => {
-          things(isOn);
+          $$.things(isOn);
         })
     }
     .width(BasicConstant.FULL_WIDTH)
@@ -115,13 +115,20 @@ struct Settings {
 
         List({ space: ViewArkUIConstant.SETTING_LIST_SPACE }) {
           ListItem() {
-            this.settingItem('是否显示黄历',this.isSubscribe,async (isOn: boolean) => {
+            this.settingItem({
+              text : '是否显示黄历',
+              initStatus : this.isSubscribe,
+              things : (isOn: boolean) => {
               this.isSubscribe = isOn;
+            }
             })
           }
 
           ListItem(){
-            this.settingItem('是否开启底部添加日程按钮',this.isSetChangingNewTaskButton,(isOn : boolean) => {
+            this.settingItem({
+              text : '是否开启底部添加日程按钮',
+              initStatus : this.isSetChangingNewTaskButton,
+              things : (isOn : boolean) => {
               this.getUIContext().animateTo({
                 duration : BasicConstant.ANIMATION_DURATION_SHORT,
                 curve : Curve.EaseInOut
@@ -129,13 +136,16 @@ struct Settings {
                 this.isSetChangingNewTaskButton = isOn;
                 this.changingNewTaskButtonHandingStatus = isOn;
               })
-            })
+            }})
           }
 
           if(this.isSetChangingNewTaskButton){
-            this.settingItem('智感握姿（仅部分机型支持）',this.changingNewTaskButtonHandingStatus,(isOn : boolean) => {
+            this.settingItem({
+              text : this.currentHandingStatusString,
+              initStatus : this.changingNewTaskButtonHandingStatus,
+              things : (isOn : boolean) => {
               this.changingNewTaskButtonHandingStatus = isOn;
-            })
+            }})
           }
 
           ListItem(){

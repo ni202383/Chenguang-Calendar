@@ -17,6 +17,11 @@ export struct WeekView {
   private weekArray: Array<string> = ['日', '一', '二', '三', '四', '五', '六'];
   @Link @Watch('ChangeToSpecifiedIndex') currentIndex: number;
   private preIndex : number = this.weekDataSource.getInitialIndex();
+  @StorageProp('screenWidth') screenWidth: number = 200;
+  @State @Watch('rowCompensateY') yOffset : number = 0;
+  private viewSize: number = Math.floor((this.screenWidth - 30) / 7); //用于计算每个窗口中圆形框的尺寸
+  private viewSizeHeightMD = this.viewSize / 2;
+  private holdDistance: number = this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ? this.viewSize : this.viewSizeHeightMD;
 
   aboutToAppear(): void {
     this.preIndex = this.currentIndex;
@@ -31,8 +36,12 @@ export struct WeekView {
     this.preIndex = this.currentIndex;
   }
 
+  rowCompensateY(){
+    return Math.max(this.yOffset - this.holdDistance,0);
+  }
+
   build() {
-    Column() {
+    Stack({alignContent : Alignment.Top}) {
       Row() {
         ForEach(this.weekArray, (item: string, index: number) => {
           Text(item)
@@ -45,7 +54,10 @@ export struct WeekView {
       }
       .width(BasicConstant.FULL_WIDTH)
       .height(ViewArkUIConstant.WEEK_ARRAY_HEIGHT)
+      .backgroundColor($r('app.color.backgroundcolor'))
+      .zIndex(10)
       .justifyContent(FlexAlign.SpaceAround)
+      .translate({x : 0,y : -this.rowCompensateY()})
 
       Scroll() {
         Swiper(this.swiperController) {
@@ -73,7 +85,11 @@ export struct WeekView {
       .scrollable(ScrollDirection.Vertical)
       .scrollBar(BarState.Auto) // 显示滚动条便于调试
       .edgeEffect(EdgeEffect.Spring) // 添加边缘效果
+      .padding({top : ViewArkUIConstant.WEEK_ARRAY_HEIGHT})
       .align(Alignment.Top)
+      .onDidScroll((_x : number,y : number) => {
+        this.yOffset += y;
+      })
     }
     .width(BasicConstant.FULL_WIDTH)
     .height(BasicConstant.FULL_HEIGHT)

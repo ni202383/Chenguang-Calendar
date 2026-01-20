@@ -7,11 +7,11 @@
         "material": {
           "certpath": "C:\\Users\\96929\\.ohos\\config\\default_Calendar_2lckQ9Ur_9rleqaIToD6uYfEIp9l8KGhTJCKbgK-Cbk=.cer",
           "keyAlias": "debugKey",
-          "keyPassword": "0000001A8B61AA392999E6D17920D5939815DEBE7339837DE16FC5EF24C62DE2CCC2098A4FE9A0F7AD38",
+          "keyPassword": "0000001B05013C85E3FDEF502F38351C94AEDAC7E25E2A2A253CF9154F36A95CC1325BBE33F1A8E9B9287C",
           "profile": "C:\\Users\\96929\\.ohos\\config\\default_Calendar_2lckQ9Ur_9rleqaIToD6uYfEIp9l8KGhTJCKbgK-Cbk=.p7b",
           "signAlg": "SHA256withECDSA",
           "storeFile": "C:\\Users\\96929\\.ohos\\config\\default_Calendar_2lckQ9Ur_9rleqaIToD6uYfEIp9l8KGhTJCKbgK-Cbk=.p12",
-          "storePassword": "0000001A8730C582850DFD26D5C7636C0915E16B9DDDB9E103C86A1D6C6E3F4EA36C2D15682836AA20C9"
+          "storePassword": "0000001B6A2E18DAC7046E845A6E6EDD3A8DBAED33AD70CD6266B54FEAB36DFC6A4D5B36C214969C41C7D1"
         }
       }
     ],
@@ -32,10 +32,21 @@
     ],
     "buildModeSet": [
       {
-        "name": "debug",
+        "name": "debug"
       },
       {
         "name": "release"
+      }
+    ],
+    "capabilities": [
+      {
+        "bundleName": "com.example.chenguangCalendar",
+        "config": [
+          {
+            "name": "Push Kit",
+            "capability": "com.huawei.service.push.base_service"
+          }
+        ]
       }
     ]
   },

@@ -16,6 +16,8 @@ export struct DailyTaskList {//日程列表
   @StorageLink('showDetail') showDetail : boolean = false;//用于实现一镜到底动画
   @State selectedTask : Task = new Task();
   @StorageLink('updated') @Watch('updateTask1') updated : boolean = false;
+  isMonth : boolean = true;
+  isDay : boolean = false;
 
   updateTask1(){
     /*
@@ -64,7 +66,9 @@ export struct DailyTaskList {//日程列表
                     currentYear: this.currentYear,
                     currentMonth: this.currentMonth,
                     selectedDay: this.selectedDay,
-                    task: item
+                    task: item,
+                    isMonth : this.isMonth,
+                    isDay : this.isDay
                   })
                 }
                 .height(ViewArkUIConstant.TASK_LIST_ITEM_HEIGHT)
@@ -77,6 +81,10 @@ export struct DailyTaskList {//日程列表
                   }, () => {
                     this.showDetail = true;
                   })
+                })
+                .clickEffect({
+                  level : ClickEffectLevel.LIGHT,
+                  scale : 0.9
                 })
               }, (item: Task) => item.getId())
             }

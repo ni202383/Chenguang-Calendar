@@ -2,7 +2,7 @@ import { BasicConstant } from "../../../Constants/BasicConstant"
 import { dailyScheduleItemParamType, Task } from '../../Model/DailyTask'
 import { CustomContentDialog, AlertDialog } from '@kit.ArkUI'
 import { DialogSelectRemindTimePerList } from "./DialogSelectRemindTimePerList"
-import { addTransparency, find, hexToRgb, isNormalTimeSchedule } from "../../../Utils/ViewUtils"
+import { addTransparency, find, hexToRgb, isNormalDateSchedule, isNormalTimeSchedule } from "../../../Utils/ViewUtils"
 import { TaskType } from "../../Model/enum/TaskTypeEnum"
 import { CustomButtonInRemindTimeDialog } from "./CustomButtonInRemindTimeDialog"
 import { CustomListInRemindTimeDialog } from "./CustomListInRemindTimeDialog"
@@ -18,7 +18,7 @@ import { ViewArkUIConstant } from "../../../Constants/ArkUIConstant"
 @Extend(Divider)
 function dividerStyle() {
   .vertical(false)
-  .color($r('app.color.backgroundcolor'))
+  .color('rgba(217, 217, 217, 0.50)')
   .strokeWidth(1)
   .width('95%')
 }
@@ -26,7 +26,7 @@ function dividerStyle() {
 @Extend(TextInput)
 function textInputStyle(height: number) {
   .placeholderColor($r('app.color.gray_deeper'))
-  .backgroundColor(Color.White)
+  .backgroundColor('rgba(255,255,255,0)')
   .width(BasicConstant.FULL_WIDTH)
   .height(height)
   .padding({
@@ -192,7 +192,7 @@ export struct RealDailyScheduleWithoutScroll {
       .fontSize(ViewArkUIConstant.ADD_TASK_TASK_TYPE_BUTTON_FONT_SIZE)
       .fontColor(this.selectedTaskTypeIndex == index ? color : Color.Black)
       .taskTypeStyle(this.selectedTaskTypeIndex == index ? addTransparency(hexToRgb(color),
-        ViewArkUIConstant.ADD_TASK_TASK_TYPE_BUTTON_BACKGROUND_COLOR_TRANSPARENCY) : $r('app.color.backgroundcolor'))
+        ViewArkUIConstant.ADD_TASK_TASK_TYPE_BUTTON_BACKGROUND_COLOR_TRANSPARENCY) : 'rgba(229, 229, 229, 0.40)')
       .onClick((event: ClickEvent) => {
         this.selectedTaskTypeIndex = index;
         this.newDailySchedule.setTaskType(taskType)
@@ -361,7 +361,7 @@ export struct RealDailyScheduleWithoutScroll {
   columnStyle(){
     .width(BasicConstant.FULL_WIDTH)
     .borderRadius(ViewArkUIConstant.TASK_DETAIL_PER_COLUMN_BORDER_RADIUS)
-    .backgroundColor(Color.White)
+    .backgroundColor('rgba(255,255,255,0)')
     .padding(ViewArkUIConstant.TASK_DETAIL_PER_COLUMN_PADDING)
   }
 
@@ -464,7 +464,12 @@ export struct RealDailyScheduleWithoutScroll {
         this.newDailySchedule
       )
       this.newDailySchedule = new Task();
-      this.isCloseNewDailyTask = true;
+      this.getUIContext().animateTo({
+        curve : Curve.EaseInOut,
+        duration : 300
+      },() => {
+        this.isCloseNewDailyTask = true;
+      })
     } else if (this.isUpdateDailyTask) {
       if (taskStore.updateTask(
         this.newDailySchedule.getSelectedDate().getFullYear(),
@@ -487,7 +492,12 @@ export struct RealDailyScheduleWithoutScroll {
           this.newDailySchedule_
         )
       }
-      this.ensureUpdateDailyTask = true; //返回到日程列表
+      this.getUIContext().animateTo({
+        curve : Curve.EaseInOut,
+        duration : 300
+      },() => {
+        this.ensureUpdateDailyTask = true;
+      })
     }
     this.reloadTask = !this.reloadTask
 
@@ -559,7 +569,7 @@ export struct RealDailyScheduleWithoutScroll {
 
           TextArea({ text: this.newDailySchedule.getDetail(), placeholder: '输入具体信息：' })
             .placeholderColor($r('app.color.gray_deeper'))
-            .backgroundColor(Color.White)
+            .backgroundColor('rgba(255,255,255,0)')
             .width(BasicConstant.FULL_WIDTH)
             .height(ViewArkUIConstant.TASK_DETAIL_TEXT_AREA_HEIGHT)
             .padding(ViewArkUIConstant.TASK_DETAIL_TEXT_AREA_PADDING)
@@ -614,6 +624,7 @@ export struct RealDailyScheduleWithoutScroll {
           })
         }
         .columnStyle()
+        .backgroundColor('rgba(229, 229, 229, 0.40)')
 
         Text('已设置提醒')
           .titleTextStylePerItem()
@@ -651,10 +662,12 @@ export struct RealDailyScheduleWithoutScroll {
               .height(ViewArkUIConstant.TASK_DETAIL_SET_REMINDER_HEIGHT)
               .alignItems(VerticalAlign.Center)
               .width(BasicConstant.FULL_WIDTH)
+              .borderRadius(20)
               .padding({
                 left: ViewArkUIConstant.TASK_DETAIL_SET_REMINDER_PADDING_LEFT_RIGHT,
                 right: ViewArkUIConstant.TASK_DETAIL_SET_REMINDER_PADDING_LEFT_RIGHT
               })
+              .backgroundColor('rgba(229,229,229,0.4)')
 
               if (index != this.remindTimeArray.length - 1) {
                 Divider().dividerStyle()
@@ -677,17 +690,14 @@ export struct RealDailyScheduleWithoutScroll {
               this.newDailySchedule.setDetail("愿辰光照你，心里有方向；愿你所做皆有回响，所盼终将抵达~");
             }
             if (this.newDailySchedule.getTitle() == '' || this.newDailySchedule.getLocation() == '' ||
-              !isNormalTimeSchedule(
+              !isNormalDateSchedule(
+                new Date(),
+                this.newDailySchedule.getSelectedDate(),
                 this.newDailySchedule.getBeginHour(),
-                this.newDailySchedule.getBeginMinute(),
                 this.newDailySchedule.getEndHour(),
+                this.newDailySchedule.getBeginMinute(),
                 this.newDailySchedule.getEndMinute()
-              ) || !isNormalTimeSchedule(
-              new Date().getHours(),
-              new Date().getMinutes(),
-              this.newDailySchedule.getBeginHour(),
-              this.newDailySchedule.getBeginMinute()
-            )) {
+              )) {
               this.submitDailyTaskIncompleteDialogController.open();
             } else {
               this.saveThisTask();
@@ -702,6 +712,6 @@ export struct RealDailyScheduleWithoutScroll {
     .width(BasicConstant.FULL_WIDTH)
     .alignItems(HorizontalAlign.Center)
     .margin({ bottom: ViewArkUIConstant.TASK_DETAIL_WHOLE_MARGIN_BOTTOM })
+    .backgroundColor(Color.Transparent)
   }
 }
-

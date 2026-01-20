@@ -1,6 +1,6 @@
 {
   "app": {
-    "bundleName": "com.example.calendar",
+    "bundleName": "com.example.chenguangCalendar",
     "vendor": "example",
     "versionCode": 1000000,
     "versionName": "1.0.0",

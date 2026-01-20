@@ -18,6 +18,8 @@ import { DailyTaskItemDetail } from './View/DailyTask/DailyTaskItemDetail';
 import { StartArkUISizeConstant, ViewArkUIConstant } from '../Constants/ArkUIConstant';
 import {motion} from '@kit.MultimodalAwarenessKit'
 import {BusinessError} from '@kit.BasicServicesKit'
+import {FestivalInfo} from './View/FestivalInfo'
+import { SolarTermsInfo } from './View/SolarTermsInfo';
 
 @Builder
 export function dailySchedule() {
@@ -92,12 +94,34 @@ struct Start {
   @StorageLink('showDetail') showDetail : boolean = false;
   @StorageProp('clickedTask') clickedTask : Task = new Task();
   @State currentHandingStatus : motion.HoldingHandStatus = motion.HoldingHandStatus.NOT_HELD;
+  @StorageLink('currentHandingStatusString') currentHandingStatusString : string = '智感握姿';
   private callback : Callback<motion.HoldingHandStatus> = (handingStatus : motion.HoldingHandStatus) => {
     this.currentHandingStatus = handingStatus;
+    switch (this.currentHandingStatus){
+      case motion.HoldingHandStatus.NOT_HELD:
+        this.currentHandingStatusString = '智感握姿（当前状态：无握持）';
+        break;
+      case motion.HoldingHandStatus.LEFT_HAND_HELD:
+        this.currentHandingStatusString = '智感握姿（当前状态：左手握持）';
+        break;
+      case motion.HoldingHandStatus.RIGHT_HAND_HELD:
+        this.currentHandingStatusString = '智感握姿（当前状态：右手握持）';
+        break;
+      case motion.HoldingHandStatus.BOTH_HANDS_HELD:
+        this.currentHandingStatusString = '智感握姿（当前状态：双手握持）';
+        break;
+      default :
+        this.currentHandingStatusString = '智感握姿（当前设备不支持智感握姿）';
+        break;
+    }
   }
   @StorageProp('isSetChangingNewTaskButton') isSetChangingNewTaskButton : boolean = true;
   @StorageProp('changingNewTaskButtonHandingStatus') @Watch('updateBottomNewTaskButtonHandingStatus')
   changingNewTaskButtonHandingStatus : boolean = true;
+  @StorageLink('isShowFestivalDetail') isShowFestivalDetail : boolean = false;
+  @StorageProp('screenWidth') screenWidth : number = 200;
+  @StorageLink('isShowSolarTermsDetail') isShowSolarTermsDetail : boolean = false;
+  @StorageLink('returnEnsureSave') returnEnsureSave : boolean = false;
 
   updateBottomNewTaskButtonHandingStatus(){
     try {
@@ -106,6 +130,7 @@ struct Start {
       } else {
         motion.off('holdingHandChanged');
         this.currentHandingStatus = motion.HoldingHandStatus.NOT_HELD;
+        this.currentHandingStatusString = '智感握姿';
       }
     }catch (err){
       let error = err as BusinessError;
@@ -165,9 +190,13 @@ struct Start {
     }
     this.adjustSheetDialog = DialogHub.getSheet()//新建任务弹窗的初始化
       .setContent(wrapBuilder(dailySchedule))
-      .setStyle({ detents: [800], backgroundColor: $r('app.color.backgroundcolor') })
+      .setStyle({ 
+        detents: [800], 
+        backgroundColor: 'rgba(255,255,255,0.3)', // 添加透明度效果
+        blurStyle : BlurStyle.Thin,
+      })
       .setConfig({
-        enableOutsideInteractive: false,
+        enableOutsideInteractive: true,
         scrollSizeMode: ScrollSizeMode.CONTINUOUS,
       })
       .setComponentTargetId('adjustSheetDialog')
@@ -206,6 +235,54 @@ struct Start {
     }
   }
 
+  returnFromThisTask : CustomDialogController = new CustomDialogController({//在本页面点击返回按钮后的确认弹窗
+    builder : AlertDialog({
+      primaryTitle: '确定保存返回嘛？',
+      primaryButton: {
+        fontColor: this.themeColor,
+        value: '取消',
+      },
+      secondaryButton: {
+        value: '确定',
+        fontColor: this.themeColor,
+        action: () => {
+          this.getUIContext().animateTo({
+            duration : BasicConstant.ANIMATION_DURATION_LONG,
+            curve : Curve.EaseInOut
+          },() => {
+            this.returnEnsureSave = !this.returnEnsureSave;
+            this.showDetail = false;
+          })
+        }
+      }
+    })
+  })
+
+  onBackPress(): boolean | void {
+    if(this.isShowFestivalDetail){
+      this.getUIContext().animateTo({
+        curve : Curve.EaseInOut,
+        duration : 300
+      },() => {
+        this.isShowFestivalDetail = !this.isShowFestivalDetail;
+      })
+      return true;
+    } else if(this.isShowSolarTermsDetail){
+      this.getUIContext().animateTo({
+        curve : Curve.EaseInOut,
+        duration : 300
+      },() => {
+        this.isShowSolarTermsDetail = !this.isShowSolarTermsDetail;
+      })
+      return true;
+    } else if(this.showDetail){
+      this.returnFromThisTask.open();
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   aboutToDisappear(): void {
     this.mediaQuery.unRegister();
   }
@@ -237,6 +314,7 @@ struct Start {
     .animation({
       duration : 500
     })
+    .hitTestBehavior(HitTestMode.None)
   }
 
   build() {
@@ -262,6 +340,13 @@ struct Start {
       .height(StartArkUISizeConstant.TABS_MOVING_WHITE_BLOCK_HEIGHT)
       .borderRadius(StartArkUISizeConstant.TABS_MOVING_WHITE_BLOCK_BORDER_RADIUS)
       .backgroundColor(Color.White)
+      .shadow({
+        radius : 20,
+        color : 'rgba(0,0,0,0.2)',
+        type : ShadowType.COLOR,
+        offsetX : 0,
+        offsetY : 0
+      })
       .alignRules({
         top: { anchor: '__container__', align: VerticalAlign.Top },
         left: { anchor: '__container__', align: HorizontalAlign.Start }
@@ -277,6 +362,13 @@ struct Start {
         tempo: BasicConstant.ANIMATION_SPEED_FASTER,
         curve: Curve.Linear,
         playMode: PlayMode.Normal
+      })
+      .onClick(() => {
+        console.log('已点击白色块')
+      })
+      .clickEffect({
+        level : ClickEffectLevel.LIGHT,
+        scale : 0.9
       })
 
       Column() {
@@ -452,7 +544,7 @@ struct Start {
       .width(BasicConstant.FULL_WIDTH)
       .height(BasicConstant.FULL_HEIGHT)
 
-      if(this.isSetChangingNewTaskButton){
+      if(this.isSetChangingNewTaskButton && this.currentIndex != 0){
         Button(){
           Image($r('app.media.plus_white'))
             .width('85%')
@@ -487,6 +579,16 @@ struct Start {
 
       if (this.showDetail) {
         DailyTaskItemDetail({ task: this.clickedTask, showDetail: this.showDetail })
+      }
+
+      if(this.isShowFestivalDetail){
+        FestivalInfo()
+          .geometryTransition('showFestivalDetail')
+      }
+
+      if(this.isShowSolarTermsDetail){
+        SolarTermsInfo()
+          .geometryTransition('showSolarTermsDetail')
       }
 
     }

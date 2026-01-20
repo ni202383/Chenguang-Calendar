@@ -103,3 +103,64 @@ export function isNormalTimeSchedule(startHour : number,startMinute : number,end
   if(startTotalMinutes <= endTotalMinutes)return true;
   else return false;
 }
+
+export function isNormalDateSchedule(startDate : Date,endDate : Date,beginHour : number,endHour : number,beginMinute : number,endMinute : number) : boolean{
+  let startYear = startDate.getFullYear();
+  let startMonth = startDate.getMonth() + 1;
+  let startDay = startDate.getDate();
+  let endYear = endDate.getFullYear();
+  let endMonth = endDate.getMonth() + 1;
+  let endDay = endDate.getDate();
+  let startDateString = dateToString(startYear,startMonth,startDay);
+  let endDateString = dateToString(endYear,endMonth,endDay);
+  if(startDateString < endDateString)return true;
+  else if(startDateString > endDateString)return false;
+  else {
+    let startTimeString = timeToString(beginHour,beginMinute);
+    let endTimeString = timeToString(endHour,endMinute);
+    console.log(`开始时间${startTimeString} 结束时间${endTimeString}`);
+    if(startTimeString < endTimeString)return true;
+    else return false;
+  }
+}
+
+export function timeStringToTuple(time : string) : [number,number]{
+  let t = time.split(':');
+  let hour = parseInt(t[0]);
+  let minute = parseInt(t[1]);
+  return [hour,minute];
+}
+
+export function heightOffsetInTaskTable(time : string){
+  let t : [number,number] = timeStringToTuple(time);
+  let hour = t[0];
+  let minute = t[1];
+  return hour * 30 + minute * 0.5;
+}
+
+export function widthOffsetInTaskTable(week : number,width : number){
+  return week * width;
+}
+
+export function timeDiff(time1 : string,time2 : string){
+  let t1 = timeStringToTuple(time1);
+  let t2 = timeStringToTuple(time2);
+  let hour1 = t1[0];
+  let hour2 = t2[0];
+  let minute1 = t1[1];
+  let minute2 = t2[1];
+  return Math.abs(hour1 * 60 + minute1 - hour2 * 60 - minute2);
+}
+
+export function dateToString(year : number,month : number,day : number){
+  let yearString = year.toString();
+  let monthString = month.toString().padStart(2,'0');
+  let dayString = day.toString().padStart(2,'0');
+  return `${yearString}-${monthString}-${dayString}`;
+}
+
+export function timeToString(hour : number,minute : number){
+  let hourString = hour.toString().padStart(2,'0');
+  let minuteString = minute.toString().padStart(2,'0');
+  return `${hourString}:${minuteString}`;
+}

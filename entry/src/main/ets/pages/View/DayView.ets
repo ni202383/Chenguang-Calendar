@@ -4,6 +4,7 @@ import { BreakpointConstant } from "../../Constants/BreakpointConstant";
 import { PerDayInfo } from "../Model/PerDayInfo";
 import { DayDataSource } from "../ViewModel/DataSource/DayDataSource";
 import { DailyTaskList } from "./DailyTask/DailyTaskList";
+import { TaskListGrid } from "./DailyTask/TaskListGrid";
 
 @Component
 export struct DayView {
@@ -33,27 +34,7 @@ export struct DayView {
     Column() {
       Swiper(this.swiperController) {
         LazyForEach(this.dayDataSource, (item: PerDayInfo) => {
-          Scroll() {
-            Column(){
-              DailyTaskList({
-                currentYear: this.currentYear,
-                currentMonth: this.currentMonth,
-                selectedDay: this.currentDay,
-                task: item.getTask()
-              })
-            }
-            .width(BasicConstant.FULL_WIDTH)
-            .justifyContent(FlexAlign.Start)
-            .margin({bottom : ViewArkUIConstant.DAY_VIEW_MARGIN_BOTTOM})
-
-          }
-          .width(BasicConstant.FULL_WIDTH)
-          .height(BasicConstant.FULL_HEIGHT)
-          .scrollable(ScrollDirection.Vertical)
-          .scrollBar(BarState.Auto)
-          .edgeEffect(EdgeEffect.Spring)
-          .align(Alignment.Top)
-
+          DayViewDetail({perDayInfo : item})
         }, (item: PerDayInfo) => `${item.getYear()}-${item.getMonth()}-${item.getDay()}`)
       }
       .width(BasicConstant.FULL_WIDTH)
@@ -74,5 +55,88 @@ export struct DayView {
     .width(BasicConstant.FULL_WIDTH)
     .height(BasicConstant.FULL_HEIGHT)
     .id('adjustSheetDialog')
+  }
+}
+
+@Component
+struct DailyTaskGrid{
+  @Prop dayInfo: PerDayInfo;
+
+  build() {
+    Scroll(){
+      TaskListGrid({
+        year : this.dayInfo.getYear(),
+        month : this.dayInfo.getMonth(),
+        day : this.dayInfo.getDay(),
+        isWeeklyTaskTableMode : false,
+        isDailyTaskTableMode : true,
+        totalTableWidth : 150
+      })
+    }
+    .width(BasicConstant.FULL_WIDTH)
+    .height(BasicConstant.FULL_HEIGHT)
+    .scrollable(ScrollDirection.Vertical)
+    .scrollBar(BarState.Off)
+    .edgeEffect(EdgeEffect.Spring)
+    .align(Alignment.Top)
+    .margin({bottom : 50})
+  }
+}
+
+@Component
+struct DayViewDetail{
+  perDayInfo : PerDayInfo = new PerDayInfo();
+  @State currentYear : number = this.perDayInfo.getYear();
+  @State currentMonth : number = this.perDayInfo.getMonth();
+  @State currentDay : number = this.perDayInfo.getDay();
+  @StorageProp(BreakpointConstant.CURRENT_BREAKPOINT) currentBreakpoint : string = BreakpointConstant.BREAKPOINT_SM;
+  aboutToAppear(): void {
+    this.currentYear = this.perDayInfo.getYear();
+    this.currentMonth = this.perDayInfo.getMonth();
+    this.currentDay = this.perDayInfo.getDay();
+    console.log(`数据为:${this.currentYear}-${this.currentMonth}-${this.currentDay}`);
+  }
+  build() {
+    Row({space : 10}){
+      Scroll(){
+        TaskListGrid({
+          year : this.currentYear,
+          month : this.currentMonth,
+          day : this.currentDay,
+          isWeeklyTaskTableMode : false,
+          isDailyTaskTableMode : true,
+          totalTableWidth : 150
+        })
+      }
+      .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? '18.5%' : '30%')
+      .height(BasicConstant.FULL_HEIGHT)
+      .scrollable(ScrollDirection.Vertical)
+      .scrollBar(BarState.Off)
+      .edgeEffect(EdgeEffect.Spring)
+      .align(Alignment.Top)
+      .margin({bottom : 50})
+
+
+      Scroll(){
+        Column(){
+          DailyTaskList({
+            currentYear : this.currentYear,
+            currentMonth : this.currentMonth,
+            selectedDay : this.currentDay,
+            isMonth : false,
+            isDay : true
+          })
+        }
+      }
+      .height(BasicConstant.FULL_HEIGHT)
+      .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? '78%' : '67%')
+      .scrollable(ScrollDirection.Vertical)
+      .scrollBar(BarState.Auto)
+      .edgeEffect(EdgeEffect.Spring)
+      .align(Alignment.Top)
+
+    }
+    .width(BasicConstant.FULL_WIDTH)
+    .height(BasicConstant.FULL_HEIGHT)
   }
 }

@@ -13,6 +13,8 @@ export struct DailyTaskListItem {
   @Link currentYear: number;
   @Link currentMonth: number;
   @Link selectedDay: number;
+  isMonth : boolean = true;
+  isDay : boolean = false;
 
   @Styles
   columnStyle(){
@@ -57,15 +59,15 @@ export struct DailyTaskListItem {
       Row({ space: ViewArkUIConstant.TASK_LIST_ITEM_BOTTOM_ROW_GAP_SPACE }) {
         Column({ space: ViewArkUIConstant.TASK_LIST_ITEM_BOTTOM_LEFT_COLUMN_GAP_SPACE }) {
           Text(`${this.currentYear}年${this.currentMonth}月${this.selectedDay}日`)
-            .fontSize(ViewArkUIConstant.TASK_LIST_ITEM_DATE_FONT_SIZE)
+            .fontSize(this.isMonth && !this.isDay ? ViewArkUIConstant.TASK_LIST_ITEM_DATE_FONT_SIZE : 14)
             .fontColor(Color.Black)
           Text(`开始时间:${this.task.getBeginHour().toString().padStart(BasicConstant.MAX_LENGTH_TIME, '0')
           } : ${this.task.getBeginMinute().toString().padStart(BasicConstant.MAX_LENGTH_TIME, '0')}`)
-            .fontSize(ViewArkUIConstant.TASK_LIST_ITEM_BEGIN_END_TIME_FONT_SIZE)
+            .fontSize(this.isMonth && !this.isDay ? ViewArkUIConstant.TASK_LIST_ITEM_BEGIN_END_TIME_FONT_SIZE : 14)
             .fontColor(Color.Black)
           Text(`结束时间:${this.task.getEndHour().toString().padStart(BasicConstant.MAX_LENGTH_TIME, '0')
           } : ${this.task.getEndMinute().toString().padStart(BasicConstant.MAX_LENGTH_TIME, '0')}`)
-            .fontSize(ViewArkUIConstant.TASK_LIST_ITEM_BEGIN_END_TIME_FONT_SIZE)
+            .fontSize(this.isMonth && !this.isDay ? ViewArkUIConstant.TASK_LIST_ITEM_BEGIN_END_TIME_FONT_SIZE : 14)
             .fontColor(Color.Black)
         }
         .width(ViewArkUIConstant.TASK_LIST_ITEM_TASK_TIME_WIDTH_PERCENTAGE)
@@ -76,12 +78,12 @@ export struct DailyTaskListItem {
         Column({ space: ViewArkUIConstant.TASK_LIST_ITEM_BOTTOM_RIGHT_COLUMN_GAP_SPACE }) {
           Text(`在${this.task.getLocation()}`)
             .width(ViewArkUIConstant.TASK_LIST_ITEM_LOCATION_FONT_WIDTH_PERCENTAGE)
-            .fontSize(ViewArkUIConstant.TASK_LIST_ITEM_LOCATION_FONT_SIZE)
+            .fontSize(this.isMonth && !this.isDay ? ViewArkUIConstant.TASK_LIST_ITEM_LOCATION_FONT_SIZE : 14)
             .fontColor(Color.Black)
             .fontWeight(FontWeight.Bold)
 
           Text(this.task.getDetail())
-            .fontSize(ViewArkUIConstant.TASK_LIST_ITEM_DETAIL_FONT_SIZE)
+            .fontSize(this.isMonth && !this.isDay ? ViewArkUIConstant.TASK_LIST_ITEM_DETAIL_FONT_SIZE : 14)
             .maxLines(ViewArkUIConstant.TASK_LIST_ITEM_DETAIL_MAX_LINES)
             .fontColor(Color.Black)
             .width(ViewArkUIConstant.TASK_LIST_ITEM_DETAIL_WIDTH_PERCENTAGE)
@@ -103,6 +105,6 @@ export struct DailyTaskListItem {
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
     .width(BasicConstant.FULL_WIDTH)
-    .height(ViewArkUIConstant.TASK_LIST_ITEM_WHOLE_HEIGHT)
+    .height(BasicConstant.FULL_HEIGHT)
   }
 }
