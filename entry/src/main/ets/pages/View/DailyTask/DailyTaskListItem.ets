@@ -1,11 +1,11 @@
 import { ViewArkUIConstant } from "../../../Constants/ArkUIConstant";
 import { BasicConstant } from "../../../Constants/BasicConstant";
 import { Task } from "../../Model/DailyTask";
-import { TaskType } from "../../Model/enum/TaskTypeEnum";
+import { TaskType } from "../../Model/Enum";
 
 @Component
 export struct DailyTaskListItem {
-  @Prop task: Task = new Task();
+  @ObjectLink task: Task;
   private workColor: string = '#E31818';
   private lifeColor: string = '#58EF1A';
   private entertainmentColor: string = '#AB1AC2';

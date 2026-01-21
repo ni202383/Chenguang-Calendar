@@ -8,7 +8,7 @@ import { Task } from "../../Model/DailyTask";
 import { taskStore } from "../../Model/TaskStore";
 import { DailyTaskTimeRange, TaskTimeRange } from "../../Model/TaskTimeRange";
 import { JSON } from "@kit.ArkTS";
-import { TaskType } from "../../Model/enum/TaskTypeEnum";
+import { TaskType } from "../../Model/Enum";
 import { hex2rgb } from "@keke/color-picker";
 
 @Component
@@ -285,6 +285,10 @@ export struct TaskListGrid {
     .backgroundColor(Color.White)
     .borderRadius(20)
     .padding(15)
+    .clickEffect({
+      level : ClickEffectLevel.LIGHT,
+      scale : 0.9
+    })
   }
 }
 

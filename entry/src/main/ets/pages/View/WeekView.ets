@@ -83,7 +83,7 @@ export struct WeekView {
       .height(BasicConstant.FULL_HEIGHT)
       .layoutWeight(ViewArkUIConstant.SCROLL_LAYOUT_WEIGHT) // 添加权重，让Scroll占据剩余空间
       .scrollable(ScrollDirection.Vertical)
-      .scrollBar(BarState.Auto) // 显示滚动条便于调试
+      .scrollBar(BarState.Off) // 显示滚动条便于调试
       .edgeEffect(EdgeEffect.Spring) // 添加边缘效果
       .padding({top : ViewArkUIConstant.WEEK_ARRAY_HEIGHT})
       .align(Alignment.Top)

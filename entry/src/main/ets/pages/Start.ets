@@ -16,9 +16,9 @@ import { YearDataSource } from './ViewModel/DataSource/YearDataSource';
 import { YearView } from './View/YearView';
 import { DailyTaskItemDetail } from './View/DailyTask/DailyTaskItemDetail';
 import { StartArkUISizeConstant, ViewArkUIConstant } from '../Constants/ArkUIConstant';
-import {motion} from '@kit.MultimodalAwarenessKit'
-import {BusinessError} from '@kit.BasicServicesKit'
-import {FestivalInfo} from './View/FestivalInfo'
+import { motion } from '@kit.MultimodalAwarenessKit'
+import { BusinessError } from '@kit.BasicServicesKit'
+import { FestivalInfo } from './View/FestivalInfo'
 import { SolarTermsInfo } from './View/SolarTermsInfo';
 
 @Builder
@@ -537,6 +537,7 @@ struct Start {
         .scrollable(false)
         .onAnimationStart((fromIndex : number,toIndex : number) => {
           this.currentIndex = toIndex;
+          AppStorage.setOrCreate('wholeIndex',this.currentIndex);
         })
         .animationCurve(Curve.Smooth)
         .animationDuration(BasicConstant.ANIMATION_DURATION_SHORT)

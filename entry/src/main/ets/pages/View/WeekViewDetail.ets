@@ -14,6 +14,10 @@ import { TaskListGrid } from "./DailyTask/TaskListGrid";
   .padding(10)
   .backgroundColor(Color.White)
   .borderRadius(15)
+  .clickEffect({
+    level : ClickEffectLevel.LIGHT,
+    scale : 0.9
+  })
 }
 
 @Component

@@ -1,4 +1,4 @@
-import { TaskType } from "./enum/TaskTypeEnum";
+import { TaskType } from "./Enum";
 
 @Observed
 export class TaskTimeRange{

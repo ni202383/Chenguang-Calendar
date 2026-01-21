@@ -14,6 +14,7 @@ export struct DailyTaskItemDetail{
   @State isDeleteThisTask : boolean = false;
   @State returnEnsureSave : boolean = false;
   @StorageProp(BreakpointConstant.CURRENT_BREAKPOINT) currentBreakpoint : string = BreakpointConstant.BREAKPOINT_SM;
+  @StorageProp('wholeIndex') wholeIndex : number = 1;
 
   closePage(){
     if(this.ensureUpdateDailyTask){
@@ -22,8 +23,8 @@ export struct DailyTaskItemDetail{
         curve : Curve.EaseInOut
       },() => {
         this.showDetail = false;
+        this.ensureUpdateDailyTask = false;
       })
-      this.ensureUpdateDailyTask = false;
     }
   }
 
@@ -75,10 +76,12 @@ export struct DailyTaskItemDetail{
           Row(){
             Button(){
               Image($r('app.media.return'))
-                .width(BasicConstant.FULL_WIDTH)
+                .width('75%')
             }
             .type(ButtonType.Circle)
             .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ?
+              ViewArkUIConstant.TASK_DETAIL_RETURN_BUTTON_WIDTH_LG : ViewArkUIConstant.TASK_DETAIL_RETURN_BUTTON_WIDTH_OTHER)
+            .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ?
               ViewArkUIConstant.TASK_DETAIL_RETURN_BUTTON_WIDTH_LG : ViewArkUIConstant.TASK_DETAIL_RETURN_BUTTON_WIDTH_OTHER)
             .backgroundColor($r('app.color.background_gray'))
             .onClick((event : ClickEvent) => {
@@ -121,6 +124,6 @@ export struct DailyTaskItemDetail{
     .height(BasicConstant.FULL_HEIGHT)
     .backgroundColor('rgba(255,255,255,0.3)')
     .backgroundBlurStyle(BlurStyle.Thin)
-    .geometryTransition(this.task.getId())
+    .geometryTransition(this.task.getId() + this.wholeIndex.toString())
   }
 }

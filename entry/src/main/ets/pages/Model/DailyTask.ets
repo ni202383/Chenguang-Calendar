@@ -1,4 +1,4 @@
-import { TaskType } from "./enum/TaskTypeEnum";
+import { TaskType } from "./Enum";
 import { RemindTime, RemindTimePlain } from "./RemindTimeBase";
 
 export interface TaskPlain {

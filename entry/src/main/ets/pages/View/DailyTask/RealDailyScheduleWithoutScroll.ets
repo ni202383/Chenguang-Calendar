@@ -3,7 +3,7 @@ import { dailyScheduleItemParamType, Task } from '../../Model/DailyTask'
 import { CustomContentDialog, AlertDialog } from '@kit.ArkUI'
 import { DialogSelectRemindTimePerList } from "./DialogSelectRemindTimePerList"
 import { addTransparency, find, hexToRgb, isNormalDateSchedule, isNormalTimeSchedule } from "../../../Utils/ViewUtils"
-import { TaskType } from "../../Model/enum/TaskTypeEnum"
+import { TaskType } from "../../Model/Enum"
 import { CustomButtonInRemindTimeDialog } from "./CustomButtonInRemindTimeDialog"
 import { CustomListInRemindTimeDialog } from "./CustomListInRemindTimeDialog"
 import { generateRemindTimeListInfo, RemindTime, sortRemindTimeList } from "../../Model/RemindTimeBase"
@@ -83,7 +83,6 @@ export struct RealDailyScheduleWithoutScroll {
   private deletingRemindTime: RemindTime = new RemindTime();
   @StorageLink('isCloseNewDailyTask') isCloseNewDailyTask: boolean = false; //新建日程点击确定按钮后到Index触发关闭新建日程弹窗
   @StorageLink('reloadTask') reloadTask: boolean = false; //新建任务时点击确认按钮符合要求就重新更新日程视图，显示日程
-  @StorageLink('updated') updated: boolean = false;
 
   deleteThisTask() {
     if (this.isDeleteThisTask == true) {
@@ -477,7 +476,6 @@ export struct RealDailyScheduleWithoutScroll {
         this.newDailySchedule.getSelectedDate().getDate(),
         this.newDailySchedule
       )) {
-        this.updated = !this.updated;
       } else {
         taskStore.addTask(
           this.newDailySchedule.getSelectedDate().getFullYear(),
@@ -499,8 +497,12 @@ export struct RealDailyScheduleWithoutScroll {
         this.ensureUpdateDailyTask = true;
       })
     }
-    this.reloadTask = !this.reloadTask
-
+    this.getUIContext().animateTo({
+      curve : Curve.EaseInOut,
+      duration : 300
+    },() => {
+      this.reloadTask = !this.reloadTask
+    })
   } //点击返回键后弹出弹窗点击确定后更新日程
 
   build() {

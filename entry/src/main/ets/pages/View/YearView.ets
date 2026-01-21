@@ -192,7 +192,7 @@ export struct YearView {
       .width(BasicConstant.FULL_WIDTH)
       .height(BasicConstant.FULL_HEIGHT)
       .scrollable(ScrollDirection.Vertical)
-      .scrollBar(BarState.Auto)
+      .scrollBar(BarState.Off)
       .align(Alignment.Top)
       .edgeEffect(EdgeEffect.Spring)
 
