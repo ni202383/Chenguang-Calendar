@@ -99,9 +99,18 @@
     {
       "name": "dateInfo_display_name",
       "value": "dateInfo"
-    },{
+    },
+    {
       "name": "reason",
       "value": "remind the daily schedule"
+    },
+    {
+      "name": "CountDownWidget_desc",
+      "value": "This is a count down widget."
+    },
+    {
+      "name": "CountDownWidget_display_name",
+      "value": "CountDownWidget"
     }
   ]
 }

@@ -4,6 +4,7 @@ import { ColorPickDialog } from 'color-picker';
 import {FormIdStore} from '../Utils/FormIdStore';
 import { formBindingData, formProvider } from '@kit.FormKit';
 import { ViewArkUIConstant } from '../Constants/ArkUIConstant';
+import { ButtonModifier } from './Model/AttributeModifier';
 
 interface ItemType{
   text : string;
@@ -95,13 +96,14 @@ struct Settings {
       Column({ space: ViewArkUIConstant.SETTING_COLUMN_GAP_SPACE }) {
         Button() {
           Image($r('app.media.return'))
-            .width(ViewArkUIConstant.SETTING_RETURN_IMAGE_WIDTH_HEIGHT)
-            .height(ViewArkUIConstant.SETTING_RETURN_IMAGE_WIDTH_HEIGHT)
+            .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 30 : 20)
+            .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 30 : 20)
         }
-        .width(ViewArkUIConstant.SETTING_RETURN_BUTTON_WIDTH_HEIGHT)
-        .height(ViewArkUIConstant.SETTING_RETURN_BUTTON_WIDTH_HEIGHT)
-        .type(ButtonType.Circle)
-        .backgroundColor($r('app.color.background_gray'))
+        .attributeModifier(new ButtonModifier(
+          this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40,
+          this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40,
+          $r('app.color.background_gray')
+        ))
         .onClick((event: ClickEvent) => {
           this.getUIContext().getRouter().back();
         })

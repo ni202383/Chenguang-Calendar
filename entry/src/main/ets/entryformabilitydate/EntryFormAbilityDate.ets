@@ -1,40 +1,241 @@
-import { formBindingData, FormExtensionAbility, formInfo } from '@kit.FormKit';
+// import { formBindingData, FormExtensionAbility, formInfo } from '@kit.FormKit';
+// import { Want } from '@kit.AbilityKit';
+// import {FormIdStore} from '../Utils/FormIdStore'
+//
+// export default class EntryFormAbilityDate extends FormExtensionAbility {
+//   onAddForm(want: Want) {
+//     // Called to return a FormBindingData object.
+//     const formId = want.parameters!['ohos.extra.param.key.form_identity'] as string;
+//
+//     FormIdStore.addFormId(this.context, formId);
+//     let dataObj = new Map<string, boolean>();
+//     dataObj.set('isSubscribe', false);
+//
+//     const formData = formBindingData.createFormBindingData(dataObj);
+//     return formBindingData.createFormBindingData(formData);
+//   }
+//
+//   onCastToNormalForm(formId: string) {
+//     // Called when the form provider is notified that a temporary form is successfully
+//     // converted to a normal form.
+//   }
+//
+//   onUpdateForm(formId: string) {
+//     // Called to notify the form provider to update a specified form.
+//   }
+//
+//   onFormEvent(formId: string, message: string) {
+//     // Called when a specified message event defined by the form provider is triggered.
+//   }
+//
+//   onRemoveForm(formId: string) {
+//     // Called to notify the form provider that a specified form has been destroyed.
+//     FormIdStore.removeFormId(this.context, formId);
+//   }
+//
+//   onAcquireFormState(want: Want) {
+//     // Called to return a {@link FormState} object.
+//     return formInfo.FormState.READY;
+//   }
+// }
+
+import { formBindingData, FormExtensionAbility, formInfo, formProvider } from '@kit.FormKit';
 import { Want } from '@kit.AbilityKit';
-import {FormIdStore} from '../Utils/FormIdStore'
+import { FormIdStore } from '../Utils/FormIdStore'
+import { countDownStore } from '../pages/Model/CountDownStore'   // 按你项目真实路径改
+import { countDownWidgetBindStore } from '../pages/Model/CountDownWidgetBindStore';
+import { EventCountDown, EventCountDownPlain } from '../pages/Model/EventCountDown';
+import dataPreferences from '@ohos.data.preferences';
+
+interface CountDownFormData {
+  eventName: string;
+  imageIndex: number;
+  targetTime: number;
+  hourMinuteSecondIsUsed: boolean;
+}
+
 
 export default class EntryFormAbilityDate extends FormExtensionAbility {
+
   onAddForm(want: Want) {
-    // Called to return a FormBindingData object.
-    const formId = want.parameters!['ohos.extra.param.key.form_identity'] as string;
+    const formId: string = String(want.parameters?.['ohos.extra.param.key.form_identity'] ?? '');
+    const temporary: boolean = Boolean(want.parameters?.['ohos.extra.param.key.form_temporary'] ?? false);
 
-    FormIdStore.addFormId(this.context, formId);
-    let dataObj = new Map<string, boolean>();
-    dataObj.set('isSubscribe', false);
+    if (formId.length > 0) FormIdStore.addFormId(this.context, formId);
 
-    const formData = formBindingData.createFormBindingData(dataObj);
-    return formBindingData.createFormBindingData(formData);
+    // parse customize
+    const rawCustomize = want.parameters?.['ohos.extra.param.key.form_customize'];
+    let customizeStr: string = '';
+    if (typeof rawCustomize === 'string') {
+      customizeStr = rawCustomize;
+    } else if (Array.isArray(rawCustomize) && rawCustomize.length > 0) {
+      customizeStr = String(rawCustomize[0]);
+    }
+
+    let customizeId: string = '';
+    try {
+      if (customizeStr.length > 0) customizeId = String(JSON.parse(customizeStr)?.countDownId ?? '');
+    } catch (_) {
+      customizeId = '';
+    }
+
+    const boundId: string = formId.length > 0 ? (countDownWidgetBindStore.getCountDownId(this.context, formId) ?? '') : '';
+    let renderId: string = customizeId || boundId || countDownWidgetBindStore.peekPending(this.context) || '';
+
+    if (temporary && formId.length > 0) {
+      countDownWidgetBindStore.setPreviewFormId(this.context, formId);
+    }
+
+    if (temporary && formId.length > 0 && renderId.length > 0) {
+      countDownWidgetBindStore.cacheTemp(this.context, formId, renderId);
+    }
+
+    // 某些系统/机型会直接创建 normal form（temporary=false），也兼容
+    if (!temporary && formId.length > 0) {
+      if (renderId.length === 0) renderId = countDownWidgetBindStore.takePending(this.context) || '';
+      if (renderId.length > 0) countDownWidgetBindStore.bind(this.context, formId, renderId);
+    }
+    console.log(`onAddForm中:formId : ${formId},temporary:${temporary},renderId:${renderId},countDownStore.getById(renderId):${countDownStore.getById(renderId)}`)
+
+    const data: CountDownFormData = this.buildBindingDataById(renderId);
+    return formBindingData.createFormBindingData(data);
+  }
+
+  private static readonly CD_PREF_NAME: string = 'countdown_store';
+  private static readonly CD_KEY_DATA: string = 'countdown_json';
+
+  private getCountDownByIdFromDisk(id: string): EventCountDown | null {
+    if (id.length === 0) return null;
+
+    try {
+      const pref = dataPreferences.getPreferencesSync(this.context, { name: EntryFormAbilityDate.CD_PREF_NAME });
+      const json = (pref.getSync(EntryFormAbilityDate.CD_KEY_DATA, '') as string) ?? '';
+      if (json.trim().length === 0) return null;
+
+      const arr = JSON.parse(json) as EventCountDownPlain[];
+      for (let i = 0; i < arr.length; i++) {
+        if (arr[i].id === id) return EventCountDown.fromPlainObject(arr[i]);
+      }
+      return null;
+    } catch (e) {
+      console.error('[FormExt] getCountDownByIdFromDisk failed: ' + (e as Error).message);
+      return null;
+    }
   }
 
   onCastToNormalForm(formId: string) {
-    // Called when the form provider is notified that a temporary form is successfully
-    // converted to a normal form.
+    const fid: string = String(formId ?? '');
+    if (fid.length === 0) return;
+
+    // 优先用 temp 缓存，其次 pending（再其次已绑定）
+    let id: string = countDownWidgetBindStore.getTemp(this.context, fid) || '';
+    if (id.length === 0) id = countDownWidgetBindStore.peekPending(this.context) || '';
+    if (id.length === 0) id = (countDownWidgetBindStore.getCountDownId(this.context, fid) ?? '') || '';
+
+    if (id.length === 0) return;
+
+    countDownWidgetBindStore.bind(this.context, fid, id);
+    countDownWidgetBindStore.clearTemp(this.context, fid);
+
+    // 转常态后主动刷新一次，否则可能还在显示临时的默认数据
+    const data: CountDownFormData = this.buildBindingDataById(id);
+    formProvider.updateForm(fid, formBindingData.createFormBindingData(data));
   }
+
+  private buildBindingDataById(id: string): CountDownFormData {
+    const cd = this.getCountDownByIdFromDisk(id);
+    if (cd === null) {
+      return { eventName: '倒计时', imageIndex: 0, targetTime: 0, hourMinuteSecondIsUsed: false };
+    }
+    return {
+      eventName: cd.eventName,
+      imageIndex: cd.imageIndex,
+      targetTime: cd.targetDate.getTime(),
+      hourMinuteSecondIsUsed: cd.hourMinuteSecondIsUsed
+    };
+  }
+
 
   onUpdateForm(formId: string) {
-    // Called to notify the form provider to update a specified form.
+    const fid: string = String(formId ?? '');
+    const id: string = (countDownWidgetBindStore.getCountDownId(this.context, fid) ?? '') || '';
+    const data: CountDownFormData = this.buildBindingDataById(id);
+    formProvider.updateForm(fid, formBindingData.createFormBindingData(data));
   }
 
-  onFormEvent(formId: string, message: string) {
-    // Called when a specified message event defined by the form provider is triggered.
-  }
 
   onRemoveForm(formId: string) {
-    // Called to notify the form provider that a specified form has been destroyed.
     FormIdStore.removeFormId(this.context, formId);
+    countDownWidgetBindStore.unbind(this.context, formId);
   }
 
   onAcquireFormState(want: Want) {
-    // Called to return a {@link FormState} object.
     return formInfo.FormState.READY;
+  }
+
+  // ========== 复制一份你列表卡片的 formatRemainText（无需定时器） ==========
+  private diffYMD(from: Date, to: Date): [number, number, number] {
+    let start = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+    let end = new Date(to.getFullYear(), to.getMonth(), to.getDate());
+
+    if (start.getTime() > end.getTime()) return [0, 0, 0];
+
+    let years = end.getFullYear() - start.getFullYear();
+    let months = end.getMonth() - start.getMonth();
+    let days = end.getDate() - start.getDate();
+
+    if (days < 0) {
+      months -= 1;
+      const prevMonthEnd = new Date(end.getFullYear(), end.getMonth(), 0);
+      days += prevMonthEnd.getDate();
+    }
+    if (months < 0) {
+      years -= 1;
+      months += 12;
+    }
+    if (years < 0) return [0, 0, 0];
+    return [years, months, days];
+  }
+
+  private diffHMS(diffMs: number): [number, number, number] {
+    const totalSec = Math.max(0, Math.floor(diffMs / 1000));
+    const hours = Math.floor(totalSec / 3600);
+    const minutes = Math.floor((totalSec % 3600) / 60);
+    const seconds = totalSec % 60;
+    return [hours, minutes, seconds];
+  }
+
+  private formatRemainText(now: Date, target: Date): string {
+    const diffMs = target.getTime() - now.getTime();
+    if (diffMs <= 0) return '已到达';
+
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    if (diffMs < oneDayMs) {
+      let h = this.diffHMS(diffMs)[0];
+      let m = this.diffHMS(diffMs)[1];
+      let s = this.diffHMS(diffMs)[2];
+      let str = '';
+      if (h > 0) str += `${h}时`;
+      if (m > 0) str += `${m}分`;
+      str += `${s}秒`;
+      return str;
+    }
+
+    let y = this.diffYMD(now, target)[0];
+    let mo = this.diffYMD(now, target)[1];
+    let d0 = this.diffYMD(now, target)[2];
+    if (y >= 1) {
+      let str = `${y}年`;
+      if (mo > 0) str += `${mo}月`;
+      if (d0 > 0) str += `${d0}日`;
+      return str;
+    }
+    if (mo >= 1) {
+      let str = `${mo}月`;
+      if (d0 > 0) str += `${d0}日`;
+      return str;
+    }
+    const d = Math.max(1, d0);
+    return `${d}日`;
   }
 }

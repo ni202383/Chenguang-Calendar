@@ -4,6 +4,8 @@ import { window } from '@kit.ArkUI';
 import { notificationManager } from '@kit.NotificationKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { taskStore } from '../pages/Model/TaskStore';
+import {countDownStore} from '../pages/Model/CountDownStore';
+import { courseStore } from '../pages/Model/CourseStore'; // [课程导入] 初始化课程仓库。
 
 const DOMAIN = 0x0000;
 
@@ -16,9 +18,15 @@ export default class EntryAbility extends UIAbility {
     }
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onCreate');
 
+    // [启动恢复] 提前注入课程仓库 context，避免首页首次渲染时课程区拿不到 termStartDate。
+    courseStore.bindContext(this.context);
+
     (async () => {
       await taskStore.init(this.context);
-      console.info('TaskStore init 完成，磁盘数据已恢复');
+      await countDownStore.init(this.context);
+      await courseStore.init(this.context);
+      AppStorage.setOrCreate('isExportCourseSchedule', courseStore.hasImportedCourse()); // [课程导入] 启动时恢复课表导入状态。
+      console.info('TaskStore countDownStore courseStore init 完成，磁盘数据已恢复');
     })();
   }
 
@@ -53,7 +61,8 @@ export default class EntryAbility extends UIAbility {
         { key: 'themeColor',  defaultValue: '#EA5C2E' },
         { key: 'isSubscribe', defaultValue: true },
         { key: 'isSetChangingNewTaskButton', defaultValue: true},
-        { key: 'changingNewTaskButtonHandingStatus', defaultValue: true}
+        { key: 'changingNewTaskButtonHandingStatus', defaultValue: true},
+        { key: 'isExportCourseSchedule', defaultValue: false } // [课程导入] 课表导入状态持久化。
       ]);
 
       hilog.info(DOMAIN, 'testTag', 'Succeeded in loading the content.');

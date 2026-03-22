@@ -6,6 +6,7 @@ import { BreakpointConstant } from '../../Constants/BreakpointConstant';
 import { common } from '@kit.AbilityKit'
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import {BusinessError} from '@kit.BasicServicesKit'
+import { ButtonModifier } from '../Model/AttributeModifier';
 
 @Extend(Text) function titleFontStyle(currentBreakpoint : string){
   .fontSize(currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 25 : 20)
@@ -151,12 +152,14 @@ export struct SolarTermsInfo{
         Row({space : this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 15 : 10}){
           Button({type : ButtonType.Circle}){
             Image($r('app.media.return'))
-              .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40)
-              .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40)
+              .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 30 : 20)
+              .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 30 : 20)
           }
-          .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40)
-          .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40)
-          .backgroundColor($r('app.color.background_gray'))
+          .attributeModifier(new ButtonModifier(
+            this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40,
+            this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40,
+            $r('app.color.background_gray')
+          ))
           .onClick((event: ClickEvent) => {
             this.getUIContext().animateTo({
               curve : Curve.EaseInOut,

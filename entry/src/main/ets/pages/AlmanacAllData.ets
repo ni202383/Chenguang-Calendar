@@ -6,6 +6,7 @@ import { BreakpointConstant } from '../Constants/BreakpointConstant'
 import { AlmanacOfCurrentDay } from './View/Almanac/AlmanacOfCurrentDay'
 import { AlmanacOfCurrentTimeInCurrentDay } from './View/Almanac/AlmanacOfCurrentTimeInCurrentDay'
 import { ViewArkUIConstant } from '../Constants/ArkUIConstant';
+import { ButtonModifier } from './Model/AttributeModifier';
 
 @Extend(Column) function YiJiSquareStyle(currentBreakpoint : string,backgroundColor : string){
   .width(currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
@@ -59,12 +60,14 @@ struct AlmanacAllData {
           ViewArkUIConstant.ALMANAC_ALL_DATA_TITLE_ROW_GAP_SPACE_LG : ViewArkUIConstant.ALMANAC_ALL_DATA_TITLE_ROW_GAP_SPACE_OTHER }) {
           Button() {
             Image($r('app.media.return'))
-              .width(ViewArkUIConstant.ALMANAC_ALL_DATA_TITLE_IMAGE_WIDTH_HEIGHT)
-              .height(ViewArkUIConstant.ALMANAC_ALL_DATA_TITLE_IMAGE_WIDTH_HEIGHT)
+              .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 30 : 20)
+              .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 30 : 20)
           }
-          .width(ViewArkUIConstant.ALMANAC_ALL_DATA_TITLE_BUTTON_WIDTH_HEIGHT)
-          .height(ViewArkUIConstant.ALMANAC_ALL_DATA_TITLE_BUTTON_WIDTH_HEIGHT)
-          .backgroundColor($r('app.color.background_gray'))
+          .attributeModifier(new ButtonModifier(
+            this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40,
+            this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40,
+            $r('app.color.background_gray')
+          ))
           .onClick((event: ClickEvent) => {
             this.getUIContext().getRouter().back();
           })
@@ -80,6 +83,8 @@ struct AlmanacAllData {
         .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? ViewArkUIConstant.ALMANAC_ALL_DATA_TITLE_HEIGHT_LG :
           ViewArkUIConstant.ALMANAC_ALL_DATA_TITLE_HEIGHT_OTHER)
         .alignItems(VerticalAlign.Center)
+        .backgroundColor('rgba(255,255,255,0.3)')
+        .backgroundBlurStyle(BlurStyle.Thin)
 
         Scroll() {
           Column() {

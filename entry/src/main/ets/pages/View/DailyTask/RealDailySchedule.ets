@@ -26,6 +26,7 @@ export struct RealDailySchedule{
       .scrollBar(BarState.Auto)
       .edgeEffect(EdgeEffect.Spring)
       .align(Alignment.Top)
+      .padding({bottom : 20})
     }
   }
 }

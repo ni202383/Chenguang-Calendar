@@ -4,6 +4,7 @@ import { RealDailyScheduleWithoutScroll } from './RealDailyScheduleWithoutScroll
 import {AlertDialog} from '@kit.ArkUI'
 import { BreakpointConstant } from '../../../Constants/BreakpointConstant';
 import { ViewArkUIConstant } from '../../../Constants/ArkUIConstant';
+import { ButtonModifier } from '../../Model/AttributeModifier';
 
 @Component
 export struct DailyTaskItemDetail{
@@ -76,14 +77,14 @@ export struct DailyTaskItemDetail{
           Row(){
             Button(){
               Image($r('app.media.return'))
-                .width('75%')
+                .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 30 : 20)
+                .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 30 : 20)
             }
-            .type(ButtonType.Circle)
-            .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ?
-              ViewArkUIConstant.TASK_DETAIL_RETURN_BUTTON_WIDTH_LG : ViewArkUIConstant.TASK_DETAIL_RETURN_BUTTON_WIDTH_OTHER)
-            .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ?
-              ViewArkUIConstant.TASK_DETAIL_RETURN_BUTTON_WIDTH_LG : ViewArkUIConstant.TASK_DETAIL_RETURN_BUTTON_WIDTH_OTHER)
-            .backgroundColor($r('app.color.background_gray'))
+            .attributeModifier(new ButtonModifier(
+              this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40,
+              this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40,
+              $r('app.color.background_gray')
+            ))
             .onClick((event : ClickEvent) => {
               this.returnFromThisTask.open();
             })

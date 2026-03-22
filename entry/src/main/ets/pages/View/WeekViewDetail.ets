@@ -7,6 +7,8 @@ import { WeekDataSource } from "../ViewModel/DataSource/WeekDataSource";
 import { ViewArkUIConstant } from "../../Constants/ArkUIConstant";
 import { Festival_SolarTerms } from "../Model/Festival_SolarTerms";
 import { TaskListGrid } from "./DailyTask/TaskListGrid";
+import { router } from "@kit.ArkUI"; // [课程导入] 跳转至课表导入页。
+import { WeekCourseList } from "./Course/CourseSection"; // [课程导入] 周视图课程展示组件。
 
 @Extend(ListItem) function ListItemStyle() {
   .height(100)
@@ -47,6 +49,7 @@ export struct WeekViewDetail{
   @State currentDailyInfo : DailyInfo = this.weekDataSource.getData(24000).getWeekData()[0];
   private festivalList : Array<Festival_SolarTerms> = [];
   private solarTermsList : Array<Festival_SolarTerms> = [];
+  @StorageProp('isExportCourseSchedule') isExportCourseSchedule : boolean = false;
 
   aboutToAppear(): void {
     this.currentYear = this.perWeekInfo.getYear();
@@ -288,6 +291,50 @@ export struct WeekViewDetail{
 
       }
       .lanes(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ? 1 : 2)
+
+      // [课程导入] 周视图展示本周课程，并在导入后提供重新导入按钮。
+      Row() {
+        Text('本周课程')
+          .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ? 18 : 25)
+          .fontWeight(FontWeight.Bold)
+        if (this.isExportCourseSchedule) {
+          Button('重新导入')
+            .type(ButtonType.Capsule)
+            .backgroundColor(Color.White)
+            .fontColor(this.themeColor)
+            .border({ width: 1, color: this.themeColor, radius: 20 })
+            .onClick(() => {
+              this.getUIContext().getRouter().pushUrl({
+                url: 'pages/CourseImport'
+              }, router.RouterMode.Standard)
+            })
+        }
+      }
+      .width(BasicConstant.FULL_WIDTH)
+      .justifyContent(FlexAlign.SpaceBetween)
+
+      if(!this.isExportCourseSchedule){
+        Column(){
+          Button('一键导入课程表（南信大）')
+            .type(ButtonType.Capsule)
+            .backgroundColor(this.themeColor)
+            .foregroundColor(Color.White)
+            .onClick(() => {
+              this.getUIContext().getRouter().pushUrl({
+                url: 'pages/CourseImport'
+              }, router.RouterMode.Standard)
+            })
+        }
+        .width(BasicConstant.FULL_WIDTH)
+        .height(100)
+        .alignItems(HorizontalAlign.Center)
+        .justifyContent(FlexAlign.Center)
+
+      } else {
+        WeekCourseList({
+          anchorDate: new Date(this.currentYear, this.currentMonth - 1, this.selectedDay)
+        })
+      }
 
       Text('本周日程')
         .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?

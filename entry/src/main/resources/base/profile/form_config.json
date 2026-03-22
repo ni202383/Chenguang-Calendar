@@ -20,6 +20,27 @@
       "supportDimensions": [
         "2*4"
       ]
+    },
+    {
+      "name": "CountDownWidget",
+      "displayName": "$string:CountDownWidget_display_name",
+      "description": "$string:CountDownWidget_desc",
+      "src": "./ets/countdownwidget/pages/CountDownWidgetCard.ets",
+      "uiSyntax": "arkts",
+      "window": {
+        "designWidth": 720,
+        "autoDesignWidth": true
+      },
+      "colorMode": "auto",
+      "isDynamic": true,
+      "isDefault": false,
+      "updateEnabled": false,
+      "scheduledUpdateTime": "10:30",
+      "updateDuration": 1,
+      "defaultDimension": "2*4",
+      "supportDimensions": [
+        "2*4"
+      ]
     }
   ]
 }

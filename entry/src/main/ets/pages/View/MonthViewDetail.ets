@@ -13,6 +13,7 @@ import { DailyTaskList } from "./DailyTask/DailyTaskList";
 import { ViewArkUIConstant } from "../../Constants/ArkUIConstant";
 import { SolarTermsDetailData } from "../../data/SolarTermsDetailData";
 import { FestivalDetailData } from "../../data/FestivalDetailData";
+import { TodayCourseList } from "./Course/CourseSection"; // [课程导入] 月视图中的课程列表组件。
 
 @Extend(Circle) function allDayCircle(currentBreakpoint : string,themeColor : string){
   .width(
@@ -105,6 +106,7 @@ export struct MonthViewDetail{
   @StorageLink('detailedFestivalName') detailedFestivalName : string = '';
   @StorageLink('isShowSolarTermsDetail') isShowSolarTermsDetail : boolean = false;
   @StorageLink('detailedSolarTermsName') detailedSolarTermsName : string = '';
+  @StorageProp('isExportCourseSchedule') isExportCourseSchedule : boolean = false;
 
   aboutToAppear(): void {
     this.currentYear = this.perMonthInfo.getYear();
@@ -334,24 +336,48 @@ export struct MonthViewDetail{
       }
       .columnsTemplate('1fr 1fr 1fr 1fr 1fr 1fr 1fr')
 
-      Row({ space: ViewArkUIConstant.DAY_DIFF_LUNAR_GAP_SPACE }) {
-        Text(currentDateDiff(new Date(this.currentDailyInfo.getYear(), this.currentDailyInfo.getMonth() - 1, this.selectedDay)))
-          .titleStyle(this.currentBreakpoint)
-        if (this.currentDailyInfo.getLunarMonth() < 0) {
-          Text(`农历闰${number2CharacterInLunarMonth[Math.abs(this.currentDailyInfo.getLunarMonth())]}月${this.currentDailyInfo.getLunarDateText()}`)
-            .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-              ViewArkUIConstant.LUNAR_FONT_SIZE_SM : ViewArkUIConstant.LUNAR_FONT_SIZE_OTHER)
-            .fontColor($r('app.color.gray_deeper'))
-        } else {
-          Text(`农历${number2CharacterInLunarMonth[this.currentDailyInfo.getLunarMonth()]}月${this.currentDailyInfo.getLunarDateText()}`)
-            .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-              ViewArkUIConstant.LUNAR_FONT_SIZE_SM : ViewArkUIConstant.LUNAR_FONT_SIZE_OTHER)
-            .fontColor($r('app.color.gray_deeper'))
+      Row(){
+        Row({ space: ViewArkUIConstant.DAY_DIFF_LUNAR_GAP_SPACE }) {
+          Text(currentDateDiff(new Date(this.currentDailyInfo.getYear(), this.currentDailyInfo.getMonth() - 1, this.selectedDay)))
+            .titleStyle(this.currentBreakpoint)
+          if (this.currentDailyInfo.getLunarMonth() < 0) {
+            Text(`农历闰${number2CharacterInLunarMonth[Math.abs(this.currentDailyInfo.getLunarMonth())]}月${this.currentDailyInfo.getLunarDateText()}`)
+              .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
+                ViewArkUIConstant.LUNAR_FONT_SIZE_SM : ViewArkUIConstant.LUNAR_FONT_SIZE_OTHER)
+              .fontColor($r('app.color.gray_deeper'))
+          } else {
+            Text(`农历${number2CharacterInLunarMonth[this.currentDailyInfo.getLunarMonth()]}月${this.currentDailyInfo.getLunarDateText()}`)
+              .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
+                ViewArkUIConstant.LUNAR_FONT_SIZE_SM : ViewArkUIConstant.LUNAR_FONT_SIZE_OTHER)
+              .fontColor($r('app.color.gray_deeper'))
+          }
         }
+        .height(BasicConstant.FULL_HEIGHT)
+        .width('50%')
+        .alignItems(VerticalAlign.Bottom)
+
+        Row(){
+          Text('我的倒计时')
+            .fontSize(14)
+
+          Image($r('app.media.right_arrow'))
+            .height(18)
+        }
+        .width('30%')
+        .height(BasicConstant.FULL_HEIGHT)
+        .justifyContent(FlexAlign.SpaceEvenly)
+        .alignItems(VerticalAlign.Bottom)
+        .onClick((event : ClickEvent) => {
+          this.getUIContext().getRouter().pushUrl({
+            url : 'pages/CountdownList'
+          })
+        })
       }
-      .height(ViewArkUIConstant.DAY_DIFF_LUNAR_HEIGHT)
       .width(BasicConstant.FULL_WIDTH)
-      .alignItems(VerticalAlign.Bottom)
+      .height(30)
+      .justifyContent(FlexAlign.SpaceBetween)
+      .alignItems(VerticalAlign.Center)
+
 
       if(this.currentDailyInfo.getSolarTerm() != ''){
         Row({space : ViewArkUIConstant.FESTIVAL_ROW_GAP_SPACE}){
@@ -695,7 +721,50 @@ export struct MonthViewDetail{
       .lanes(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG && this.hasNearFestivalOrSolarTerms() ? 2 : 1)
       .alignListItem(ListItemAlign.Start)
 
-      Text('日程')
+      // [课程导入] 月视图顶部展示当前选中日期的课程，并保留重新导入入口。
+      Row() {
+        Text('今日课程')
+          .titleStyle(this.currentBreakpoint)
+        if (this.isExportCourseSchedule) {
+          Button('重新导入')
+            .type(ButtonType.Capsule)
+            .backgroundColor(Color.White)
+            .fontColor(this.themeColor)
+            .border({ width: 1, color: this.themeColor, radius: 20 })
+            .onClick(() => {
+              this.getUIContext().getRouter().pushUrl({
+                url: 'pages/CourseImport'
+              }, router.RouterMode.Standard,(err) => {
+                console.log('error')
+              })
+            })
+        }
+      }
+      .width(BasicConstant.FULL_WIDTH)
+      .justifyContent(FlexAlign.SpaceBetween)
+
+      Column({ space: 10 }) {
+        if(!this.isExportCourseSchedule){
+          Button('一键导入课程表（南信大）')
+            .type(ButtonType.Capsule)
+            .backgroundColor(this.themeColor)
+            .foregroundColor(Color.White)
+            .onClick(() => {
+              this.getUIContext().getRouter().pushUrl({
+                url: 'pages/CourseImport'
+              }, router.RouterMode.Standard)
+            })
+        } else {
+          TodayCourseList({
+            targetDate: new Date(this.currentYear, this.currentMonth - 1, this.selectedDay)
+          })
+        }
+      }
+      .width(BasicConstant.FULL_WIDTH)
+      .height(!this.isExportCourseSchedule ? 100 : 'auto')
+      .justifyContent(FlexAlign.Center)
+
+      Text('今日日程')
         .titleStyle(this.currentBreakpoint)
       DailyTaskList({
         currentYear: this.currentYear,

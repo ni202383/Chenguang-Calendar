@@ -389,6 +389,4 @@ export class ViewArkUIConstant{
   static readonly BOTTOM_BUTTON_X_LEFT_HAND_OFFSET = -275;
   static readonly BOTTOM_BUTTON_X_RIGHT_HAND_OFFSET = -30;
   static readonly BOTTOM_BUTTON_X_OTHER_AND_DEFAULT_OFFSET = -150;
-
 }
-

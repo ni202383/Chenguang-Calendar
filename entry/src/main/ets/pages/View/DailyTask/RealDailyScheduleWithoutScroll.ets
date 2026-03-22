@@ -275,7 +275,9 @@ export struct RealDailyScheduleWithoutScroll {
           }
         }
       ]
-    })
+    }),
+    backgroundColor :' rgba(255,255,255,0.3)',
+    backgroundBlurStyle : BlurStyle.Thin
   })
   deleteRemindTimeDialog: CustomDialogController = new CustomDialogController({
     builder: AlertDialog({
@@ -323,7 +325,9 @@ export struct RealDailyScheduleWithoutScroll {
           this.remindTimeArray.splice(deleteIndex, 1);
         }
       }
-    })
+    }),
+    backgroundColor :' rgba(255,255,255,0.3)',
+    backgroundBlurStyle : BlurStyle.Thin
   })
   submitDailyTaskIncompleteDialogController: CustomDialogController = new CustomDialogController({
     builder: CustomContentDialog({
@@ -340,7 +344,9 @@ export struct RealDailyScheduleWithoutScroll {
           }
         }
       ]
-    })
+    }),
+    backgroundColor :' rgba(255,255,255,0.3)',
+    backgroundBlurStyle : BlurStyle.Thin
   })
 
   @Builder
@@ -405,8 +411,9 @@ export struct RealDailyScheduleWithoutScroll {
       },
       cancelButtonStyle: {
         fontColor: this.themeColor
-      }
-
+      },
+      backgroundColor : 'rgba(255,255,255,0.3)',
+      backgroundBlurStyle : BlurStyle.Thin
     })
   }
   beginTimePickerDialog = () => {
@@ -425,7 +432,9 @@ export struct RealDailyScheduleWithoutScroll {
         this.newDailySchedule.setBeginHour(value.hour);
         this.newDailySchedule.setBeginMinute(value.minute);
         this.isChange = true;
-      }
+      },
+      backgroundColor : 'rgba(255,255,255,0.3)',
+      backgroundBlurStyle : BlurStyle.Thin
     })
   }
   endTimePickerDialog = () => {
@@ -450,7 +459,9 @@ export struct RealDailyScheduleWithoutScroll {
         this.newDailySchedule.setEndHour(value.hour);
         this.newDailySchedule.setEndMinute(value.minute);
         this.newDailySchedule.setIsSelectedEndTime(true);
-      }
+      },
+      backgroundColor : 'rgba(255,255,255,0.3)',
+      backgroundBlurStyle : BlurStyle.Thin
     })
   }
 
@@ -468,6 +479,7 @@ export struct RealDailyScheduleWithoutScroll {
         duration : 300
       },() => {
         this.isCloseNewDailyTask = true;
+        this.isCloseNewDailyTask = false;
       })
     } else if (this.isUpdateDailyTask) {
       if (taskStore.updateTask(

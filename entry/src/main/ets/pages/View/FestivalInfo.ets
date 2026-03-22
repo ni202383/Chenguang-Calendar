@@ -2,6 +2,8 @@ import { FestivalCustom, FestivalDetailInfo } from '../Model/FestivalDetailInfo'
 import { FestivalDetailData } from '../../data/FestivalDetailData'
 import { BasicConstant } from '../../Constants/BasicConstant';
 import { BreakpointConstant } from '../../Constants/BreakpointConstant';
+import { ButtonModifier } from '../Model/AttributeModifier';
+
 // import { FunctionController,FunctionComponent } from '@kit.AgentFrameworkKit'
 // import { common } from '@kit.AbilityKit'
 // import { hilog } from '@kit.PerformanceAnalysisKit';
@@ -163,12 +165,14 @@ export struct FestivalInfo{
         Row({space : this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 15 : 10}){
           Button({type : ButtonType.Circle}){
             Image($r('app.media.return'))
-              .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40)
-              .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40)
+              .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 30 : 20)
+              .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 30 : 20)
           }
-          .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40)
-          .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40)
-          .backgroundColor($r('app.color.background_gray'))
+          .attributeModifier(new ButtonModifier(
+            this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40,
+            this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40,
+            $r('app.color.background_gray')
+          ))
           .onClick((event: ClickEvent) => {
             this.getUIContext().animateTo({
               curve : Curve.EaseInOut,
