@@ -21,7 +21,7 @@ export class CourseStore {
     '#1E88E5', '#00ACC1', '#00897B', '#43A047', '#7CB342', '#C0CA33', '#FDD835', '#FB8C00', '#F4511E',
     '#E53935', '#D81B60', '#8E24AA', '#6D4C41', '#546E7A', '#3949AB', '#039BE5', '#00838F'
   ];
-  private context?: common.UIAbilityContext;
+  private context?: common.Context;
   private pref?: dataPreferences.Preferences;
   private courseList: Array<Course> = [];
   private termLabel: string = '';
@@ -32,11 +32,11 @@ export class CourseStore {
 
   // [启动恢复] 允许 EntryAbility 在异步初始化完成前先注入 context，
   // 这样首页首次渲染时也能通过 getPreferencesSync 直接读到已导入的课表数据。
-  public bindContext(context: common.UIAbilityContext): void {
+  public bindContext(context: common.Context): void {
     this.context = context;
   }
 
-  public async init(context: common.UIAbilityContext): Promise<void> {
+  public async init(context: common.Context): Promise<void> {
     this.context = context;
     this.pref = await dataPreferences.getPreferences(context, CourseStore.PREF_NAME);
     await this.loadFromDisk();
@@ -171,6 +171,31 @@ export class CourseStore {
     return this.getTermStartDate().trim().length > 0;
   }
 
+  // [当前周显示] 根据已导入课表与学期首周，动态计算今天所在教学周。
+  public getAcademicWeekByDate(date: Date): number {
+    const courses = this.getAll();
+    if (courses.length === 0 || !this.canResolveDateCourses()) {
+      return 0;
+    }
+    const weekIndex = this.resolveWeekIndex(date);
+    return weekIndex > 0 ? weekIndex : 0;
+  }
+
+  public getCurrentAcademicWeek(): number {
+    return this.getAcademicWeekByDate(new Date());
+  }
+
+  public getCurrentAcademicWeekText(): string {
+    const weekIndex = this.getCurrentAcademicWeek();
+    return weekIndex > 0 ? '第' + weekIndex.toString() + '周' : '';
+  }
+
+  // [当前周显示] 按传入日期动态计算教学周，供月/周/日视图在切换日期后实时更新显示。
+  public getAcademicWeekTextByDate(date: Date): string {
+    const weekIndex = this.getAcademicWeekByDate(date);
+    return weekIndex > 0 ? '第' + weekIndex.toString() + '周' : '';
+  }
+
   public getCoursesByDate(date: Date): Array<Course> {
     const courses = this.getAll();
     if (courses.length === 0 || !this.canResolveDateCourses()) {
@@ -214,7 +239,7 @@ export class CourseStore {
     const monday = this.getMonday(date);
     const termStartMonday = new Date(this.termStartDate);
     const diff = monday.getTime() - termStartMonday.getTime();
-    return Math.floor(diff / (7 * 24 * 60 * 60 * 1000)) + 1;
+    return Math.floor(diff / (7 * 24 * 60 * 60 * 1000)) + 2;
   }
 
   private resolveDayOfWeek(date: Date): number {

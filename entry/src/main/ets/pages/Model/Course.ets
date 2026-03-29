@@ -12,6 +12,9 @@ export interface CoursePlain {
   sourceSystem: string;
   termLabel: string;
   importTime: string;
+  // [课程时间] 持久化课程起止时间，旧数据缺失时会按节次自动补齐。
+  startTimeText?: string;
+  endTimeText?: string;
 }
 
 @Observed
@@ -28,14 +31,17 @@ export class Course {
   private sourceSystem: string;
   private termLabel: string;
   private importTime: Date;
+  // [课程时间] 由节次映射得到的开始/结束时间，用于应用内课程区与桌面卡片展示。
+  private startTimeText: string;
+  private endTimeText: string;
 
   constructor();
   constructor(id: string, courseName: string, teacherName: string, classroom: string, dayOfWeek: number,
     startSection: number, endSection: number, weekIndexes: Array<number>, rawWeekText: string,
-    sourceSystem: string, termLabel: string, importTime: Date);
+    sourceSystem: string, termLabel: string, importTime: Date, startTimeText?: string, endTimeText?: string);
   constructor(id?: string, courseName?: string, teacherName?: string, classroom?: string, dayOfWeek?: number,
     startSection?: number, endSection?: number, weekIndexes?: Array<number>, rawWeekText?: string,
-    sourceSystem?: string, termLabel?: string, importTime?: Date) {
+    sourceSystem?: string, termLabel?: string, importTime?: Date, startTimeText?: string, endTimeText?: string) {
     this.id = id ?? '';
     this.courseName = courseName ?? '';
     this.teacherName = teacherName ?? '';
@@ -48,6 +54,10 @@ export class Course {
     this.sourceSystem = sourceSystem ?? 'NUIST_JWXT';
     this.termLabel = termLabel ?? '';
     this.importTime = importTime ?? new Date();
+    this.startTimeText = (startTimeText ?? '').trim().length > 0 ? (startTimeText ?? '') :
+      Course.getSectionStartTime(this.startSection);
+    this.endTimeText = (endTimeText ?? '').trim().length > 0 ? (endTimeText ?? '') :
+      Course.getSectionEndTime(this.endSection);
   }
 
   public toPlainObject(): CoursePlain {
@@ -63,7 +73,9 @@ export class Course {
       rawWeekText: this.getRawWeekText(),
       sourceSystem: this.getSourceSystem(),
       termLabel: this.getTermLabel(),
-      importTime: this.getImportTime().toISOString()
+      importTime: this.getImportTime().toISOString(),
+      startTimeText: this.getStartTimeText(),
+      endTimeText: this.getEndTimeText()
     };
   }
 
@@ -80,8 +92,45 @@ export class Course {
       obj.rawWeekText,
       obj.sourceSystem,
       obj.termLabel,
-      new Date(obj.importTime)
+      new Date(obj.importTime),
+      obj.startTimeText,
+      obj.endTimeText
     );
+  }
+
+  // [课程时间] 第 1-11 节的固定作息表。
+  public static getSectionStartTime(section: number): string {
+    switch (section) {
+      case 1: return '08:00';
+      case 2: return '08:55';
+      case 3: return '10:10';
+      case 4: return '11:05';
+      case 5: return '13:45';
+      case 6: return '14:40';
+      case 7: return '15:55';
+      case 8: return '16:50';
+      case 9: return '18:45';
+      case 10: return '19:40';
+      case 11: return '20:35';
+      default: return '';
+    }
+  }
+
+  public static getSectionEndTime(section: number): string {
+    switch (section) {
+      case 1: return '08:45';
+      case 2: return '09:40';
+      case 3: return '10:55';
+      case 4: return '11:50';
+      case 5: return '14:30';
+      case 6: return '15:25';
+      case 7: return '16:40';
+      case 8: return '17:35';
+      case 9: return '19:30';
+      case 10: return '20:25';
+      case 11: return '21:20';
+      default: return '';
+    }
   }
 
   public setId(id: string): void { this.id = id; }
@@ -99,10 +148,16 @@ export class Course {
   public setDayOfWeek(dayOfWeek: number): void { this.dayOfWeek = dayOfWeek; }
   public getDayOfWeek(): number { return this.dayOfWeek; }
 
-  public setStartSection(startSection: number): void { this.startSection = startSection; }
+  public setStartSection(startSection: number): void {
+    this.startSection = startSection;
+    this.startTimeText = Course.getSectionStartTime(this.startSection);
+  }
   public getStartSection(): number { return this.startSection; }
 
-  public setEndSection(endSection: number): void { this.endSection = endSection; }
+  public setEndSection(endSection: number): void {
+    this.endSection = endSection;
+    this.endTimeText = Course.getSectionEndTime(this.endSection);
+  }
   public getEndSection(): number { return this.endSection; }
 
   public setWeekIndexes(weekIndexes: Array<number>): void { this.weekIndexes = weekIndexes; }
@@ -119,6 +174,23 @@ export class Course {
 
   public setImportTime(importTime: Date): void { this.importTime = importTime; }
   public getImportTime(): Date { return this.importTime; }
+
+  public setStartTimeText(startTimeText: string): void { this.startTimeText = startTimeText; }
+  public getStartTimeText(): string { return this.startTimeText; }
+
+  public setEndTimeText(endTimeText: string): void { this.endTimeText = endTimeText; }
+  public getEndTimeText(): string { return this.endTimeText; }
+
+  public getTimeRangeText(): string {
+    if (this.startTimeText.length === 0 || this.endTimeText.length === 0) {
+      return '';
+    }
+    return this.startTimeText + '-' + this.endTimeText;
+  }
+
+  public getSectionRangeText(): string {
+    return '第' + this.getStartSection().toString() + '-' + this.getEndSection().toString() + '节';
+  }
 
   public isActiveInWeek(weekIndex: number): boolean {
     if (this.weekIndexes.length === 0) {

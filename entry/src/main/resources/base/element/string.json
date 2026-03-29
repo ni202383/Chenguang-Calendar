@@ -111,6 +111,22 @@
     {
       "name": "CountDownWidget_display_name",
       "value": "CountDownWidget"
+    },
+    {
+      "name": "TodayCourseWidget_desc",
+      "value": "This is a service widget which could display the courses today, with date and teaching week."
+    },
+    {
+      "name": "TodayCourseWidget_display_name",
+      "value": "TodayCourseWidget"
+    },
+    {
+      "name": "coursewidget_desc",
+      "value": "null"
+    },
+    {
+      "name": "coursewidget_display_name",
+      "value": "TodayCourseWidgetCard"
     }
   ]
 }

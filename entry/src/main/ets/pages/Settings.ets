@@ -5,6 +5,7 @@ import {FormIdStore} from '../Utils/FormIdStore';
 import { formBindingData, formProvider } from '@kit.FormKit';
 import { ViewArkUIConstant } from '../Constants/ArkUIConstant';
 import { ButtonModifier } from './Model/AttributeModifier';
+import { TodayCourseWidgetHelper } from '../Utils/TodayCourseWidgetHelper';
 
 interface ItemType{
   text : string;
@@ -18,7 +19,7 @@ struct Settings {
   @StorageProp('topStatusBarHeight') topStatusBarHeight : number = 0;
   @StorageProp(BreakpointConstant.CURRENT_BREAKPOINT) currentBreakpoint : string = BreakpointConstant.BREAKPOINT_SM;
   @StorageLink('isSubscribe') @Watch('onDataChange') isSubscribe : boolean = true;
-  @StorageLink('themeColor') themeColor : string = '';
+  @StorageLink('themeColor') @Watch('onThemeColorChange') themeColor : string = '';
   @StorageLink('isSetChangingNewTaskButton') isSetChangingNewTaskButton : boolean = true;
   @StorageLink('changingNewTaskButtonHandingStatus') changingNewTaskButtonHandingStatus : boolean = true;
   @StorageProp('currentHandingStatusString') currentHandingStatusString : string = '智感握姿';
@@ -58,6 +59,22 @@ struct Settings {
         }
       }
     }
+  }
+
+
+  onThemeColorChange(){
+    const context = getContext(this);
+    // [课程卡片] 主题色变化后同步写入卡片共享偏好，并立即刷新今日课程卡片。
+    TodayCourseWidgetHelper.persistThemeColor(context, this.themeColor);
+    TodayCourseWidgetHelper.refreshAllForms(context).catch((error: Error) => {
+      console.error('[Settings] refresh today course widget failed: ' + error.message);
+    });
+  }
+
+  aboutToAppear(): void {
+    const context = getContext(this);
+    // [课程卡片] 设置页显示时同步一次当前主题色，避免卡片读取到旧值。
+    TodayCourseWidgetHelper.persistThemeColor(context, this.themeColor);
   }
 
   colorPickerDialogController : CustomDialogController = new CustomDialogController({

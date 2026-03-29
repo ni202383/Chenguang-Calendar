@@ -2,10 +2,7 @@ import { BasicConstant } from '../../../Constants/BasicConstant';
 import { BreakpointConstant } from '../../../Constants/BreakpointConstant';
 import { Course } from '../../Model/Course';
 import { courseStore } from '../../Model/CourseStore';
-
-function formatSectionRange(course: Course): string {
-  return '第' + course.getStartSection().toString() + '-' + course.getEndSection().toString() + '节';
-}
+import { CourseStatusHelper, CourseStatusInfo } from '../../../Utils/CourseStatusHelper';
 
 function formatDateLabel(date: Date): string {
   const month = (date.getMonth() + 1).toString();
@@ -18,47 +15,84 @@ function formatDateLabel(date: Date): string {
 @Component
 struct CourseCard {
   @Prop course: Course;
+  @Prop showStatus: boolean = false;
+  @Prop courseDate: Date = new Date();
   @StorageProp(BreakpointConstant.CURRENT_BREAKPOINT) currentBreakpoint: string = BreakpointConstant.BREAKPOINT_SM;
+  @StorageProp('themeColor') themeColor: string = '#EA5C2E';
 
   private getCourseColor(): string {
     // [课程颜色] 同名课程走同一个颜色映射，边框色由 CourseStore 统一分配。
     return courseStore.getCourseBorderColor(this.course.getCourseName());
   }
 
+  private getCourseStatus(): CourseStatusInfo {
+    return CourseStatusHelper.getCourseStatus(this.course, this.courseDate, this.themeColor);
+  }
+
   build() {
     Column({ space: 6 }) {
-      Text(this.course.getCourseName())
-        .fontSize(this.currentBreakpoint === BreakpointConstant.BREAKPOINT_SM ? 15 : 18)
-        .fontWeight(FontWeight.Bold)
-        .fontColor(this.getCourseColor())
-        .maxLines(1)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-
-      Text(formatSectionRange(this.course))
-        .fontSize(this.currentBreakpoint === BreakpointConstant.BREAKPOINT_SM ? 12 : 14)
-        .fontColor($r('app.color.gray_deep'))
-
-      if (this.course.getClassroom().trim().length > 0) {
-        Text(this.course.getClassroom())
-          .fontSize(this.currentBreakpoint === BreakpointConstant.BREAKPOINT_SM ? 12 : 14)
-          .fontColor($r('app.color.gray_deep'))
-          .maxLines(1)
+      Row({space : 5}){
+        Text(this.course.getCourseName())
+          .fontSize(this.currentBreakpoint === BreakpointConstant.BREAKPOINT_SM ? 15 : 18)
+          .fontWeight(FontWeight.Bold)
+          .fontColor(this.getCourseColor())
+          .maxLines(2)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
-      }
+          .width('60%')
 
-      if (this.course.getTeacherName().trim().length > 0) {
-        Text(this.course.getTeacherName())
-          .fontSize(this.currentBreakpoint === BreakpointConstant.BREAKPOINT_SM ? 12 : 14)
-          .fontColor($r('app.color.gray_deep'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
+        if (this.course.getTimeRangeText().trim().length > 0) {
+          Text(this.course.getTimeRangeText())
+            .fontSize(this.currentBreakpoint === BreakpointConstant.BREAKPOINT_SM ? 15 : 18)
+            .fontColor(this.getCourseColor())
+            .fontWeight(FontWeight.Bold)
+        }
       }
+      .width('100%')
+      .justifyContent(FlexAlign.SpaceBetween)
+      .alignItems(VerticalAlign.Top)
+
+      Row() {
+        Column(){
+          Text(this.course.getSectionRangeText())
+            .fontSize(this.currentBreakpoint === BreakpointConstant.BREAKPOINT_SM ? 12 : 14)
+            .fontColor($r('app.color.gray_deep'))
+
+          if (this.course.getClassroom().trim().length > 0) {
+            Text(this.course.getClassroom())
+              .fontSize(this.currentBreakpoint === BreakpointConstant.BREAKPOINT_SM ? 12 : 14)
+              .fontColor($r('app.color.gray_deep'))
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+          }
+
+          if (this.course.getTeacherName().trim().length > 0) {
+            Text(this.course.getTeacherName())
+              .fontSize(this.currentBreakpoint === BreakpointConstant.BREAKPOINT_SM ? 12 : 14)
+              .fontColor($r('app.color.gray_deep'))
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+          }
+        }
+        .alignItems(HorizontalAlign.Start)
+
+        if (this.showStatus) {
+          Text(this.getCourseStatus().text)
+            .fontSize(this.currentBreakpoint === BreakpointConstant.BREAKPOINT_SM ? 15 : 18)
+            .fontWeight(FontWeight.Medium)
+            .fontColor(this.getCourseStatus().color)
+        }
+      }
+      .width('100%')
+      .justifyContent(FlexAlign.SpaceBetween)
+      .alignItems(VerticalAlign.Center)
+
+
     }
     .width(BasicConstant.FULL_WIDTH)
     .padding(12)
     .backgroundColor(Color.White)
     // [课程颜色] 只改课程卡片边框颜色与圆角，不动其余 UI。
-    .border({ width: 1, color: this.getCourseColor(), radius: 1 })
+    .border({ width: 1, color: this.getCourseColor()})
     .borderRadius(20)
     .alignItems(HorizontalAlign.Start)
   }
@@ -81,7 +115,7 @@ export struct TodayCourseList {
           .fontColor($r('app.color.gray_deep'))
       } else {
         ForEach(this.getTodayCourses(), (course: Course) => {
-          CourseCard({ course: course })
+          CourseCard({ course: course, showStatus: true, courseDate: this.targetDate })
         }, (course: Course) => course.getId())
       }
     }
@@ -128,7 +162,7 @@ export struct WeekCourseList {
           .fontColor($r('app.color.gray_deep'))
       } else {
         ForEach(this.getCoursesByOffset(offset), (course: Course) => {
-          CourseCard({ course: course })
+          CourseCard({ course: course, showStatus: true, courseDate: this.getDateByOffset(offset) })
         }, (course: Course) => course.getId())
       }
     }

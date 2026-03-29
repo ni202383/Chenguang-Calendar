@@ -1,47 +1,8 @@
-// import { formBindingData, FormExtensionAbility, formInfo } from '@kit.FormKit';
-// import { Want } from '@kit.AbilityKit';
-// import {FormIdStore} from '../Utils/FormIdStore'
-//
-// export default class EntryFormAbilityDate extends FormExtensionAbility {
-//   onAddForm(want: Want) {
-//     // Called to return a FormBindingData object.
-//     const formId = want.parameters!['ohos.extra.param.key.form_identity'] as string;
-//
-//     FormIdStore.addFormId(this.context, formId);
-//     let dataObj = new Map<string, boolean>();
-//     dataObj.set('isSubscribe', false);
-//
-//     const formData = formBindingData.createFormBindingData(dataObj);
-//     return formBindingData.createFormBindingData(formData);
-//   }
-//
-//   onCastToNormalForm(formId: string) {
-//     // Called when the form provider is notified that a temporary form is successfully
-//     // converted to a normal form.
-//   }
-//
-//   onUpdateForm(formId: string) {
-//     // Called to notify the form provider to update a specified form.
-//   }
-//
-//   onFormEvent(formId: string, message: string) {
-//     // Called when a specified message event defined by the form provider is triggered.
-//   }
-//
-//   onRemoveForm(formId: string) {
-//     // Called to notify the form provider that a specified form has been destroyed.
-//     FormIdStore.removeFormId(this.context, formId);
-//   }
-//
-//   onAcquireFormState(want: Want) {
-//     // Called to return a {@link FormState} object.
-//     return formInfo.FormState.READY;
-//   }
-// }
-
 import { formBindingData, FormExtensionAbility, formInfo, formProvider } from '@kit.FormKit';
 import { Want } from '@kit.AbilityKit';
 import { FormIdStore } from '../Utils/FormIdStore'
+import { CourseWidgetFormIdStore } from '../Utils/CourseWidgetFormIdStore';
+import { TodayCourseWidgetHelper, TodayCourseWidgetFormData } from '../Utils/TodayCourseWidgetHelper';
 import { countDownStore } from '../pages/Model/CountDownStore'   // 按你项目真实路径改
 import { countDownWidgetBindStore } from '../pages/Model/CountDownWidgetBindStore';
 import { EventCountDown, EventCountDownPlain } from '../pages/Model/EventCountDown';
@@ -57,9 +18,29 @@ interface CountDownFormData {
 
 export default class EntryFormAbilityDate extends FormExtensionAbility {
 
+  // [课程卡片] 不再依赖唯一 form_name；实际配置名可能是 TodayCourseWidgetCard 等。
+  private isTodayCourseFormName(formName: string): boolean {
+    const normalized: string = formName.toLowerCase();
+    return normalized.indexOf('todaycourse') >= 0 || normalized.indexOf('coursewidget') >= 0 || normalized.indexOf('course') >= 0;
+  }
+
+  private isTodayCourseMessage(message: string): boolean {
+    return message.indexOf('refreshTodayCourse') >= 0;
+  }
+
   onAddForm(want: Want) {
     const formId: string = String(want.parameters?.['ohos.extra.param.key.form_identity'] ?? '');
     const temporary: boolean = Boolean(want.parameters?.['ohos.extra.param.key.form_temporary'] ?? false);
+    const formName: string = String(want.parameters?.['ohos.extra.param.key.form_name'] ?? '');
+
+    if (this.isTodayCourseFormName(formName)) {
+      // [课程卡片] 今日课程卡片独立登记 formId，避免和倒计时卡片混淆。
+      if (formId.length > 0) {
+        CourseWidgetFormIdStore.addFormId(this.context, formId);
+      }
+      const courseData: TodayCourseWidgetFormData = TodayCourseWidgetHelper.buildFormData(this.context);
+      return formBindingData.createFormBindingData(courseData);
+    }
 
     if (formId.length > 0) FormIdStore.addFormId(this.context, formId);
 
@@ -158,14 +139,38 @@ export default class EntryFormAbilityDate extends FormExtensionAbility {
 
   onUpdateForm(formId: string) {
     const fid: string = String(formId ?? '');
+    if (CourseWidgetFormIdStore.hasFormId(this.context, fid)) {
+      TodayCourseWidgetHelper.refreshOneForm(this.context, fid).catch((error: Error) => {
+        console.error('[EntryFormAbilityDate] refresh today course widget failed: ' + error.message);
+      });
+      return;
+    }
     const id: string = (countDownWidgetBindStore.getCountDownId(this.context, fid) ?? '') || '';
     const data: CountDownFormData = this.buildBindingDataById(id);
     formProvider.updateForm(fid, formBindingData.createFormBindingData(data));
   }
 
+  onFormEvent(formId: string, message: string) {
+    const fid: string = String(formId ?? '');
+    const eventMessage: string = String(message ?? '');
+    console.info('[EntryFormAbilityDate] onFormEvent fid=' + fid + ', message=' + eventMessage);
+    // [课程卡片] 与应用内主题色更新保持一致：按钮触发后直接走 updateForm 主动刷新当前课程卡片。
+    if (fid.length > 0 && (CourseWidgetFormIdStore.hasFormId(this.context, fid) || this.isTodayCourseMessage(eventMessage))) {
+      if (!CourseWidgetFormIdStore.hasFormId(this.context, fid)) {
+        CourseWidgetFormIdStore.addFormId(this.context, fid);
+      }
+      TodayCourseWidgetHelper.refreshOneForm(this.context, fid).then(() => {
+        console.info('[EntryFormAbilityDate] refresh today course widget success: ' + fid);
+      }).catch((error: Error) => {
+        console.error('[EntryFormAbilityDate] onFormEvent refresh today course widget failed: ' + error.message);
+      });
+      return;
+    }
+  }
 
   onRemoveForm(formId: string) {
     FormIdStore.removeFormId(this.context, formId);
+    CourseWidgetFormIdStore.removeFormId(this.context, formId);
     countDownWidgetBindStore.unbind(this.context, formId);
   }
 

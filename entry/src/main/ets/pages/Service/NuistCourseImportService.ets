@@ -26,7 +26,10 @@ export interface CoursePageSnapshot {
   apiTermCode: string;
   apiTermLabel: string;
   semesterStartDate: string;
-  apiRowJsonList: Array<string>;
+  detectedCurrentWeek: number;
+  detectedCurrentWeekSource: string;
+  currentDateIso: string;
+  apiRowJsonList: Array<Object | string>;
   apiLogText: string;
 }
 
@@ -126,6 +129,19 @@ export class NuistCourseImportService {
     return '';
   }
 
+
+  private static normalizeRowFragment(rowItem: Object | string): string {
+    if (typeof rowItem === 'string') {
+      return rowItem;
+    }
+    try {
+      return JSON.stringify(rowItem);
+    } catch (error) {
+      console.error('[NuistCourseImportService] normalizeRowFragment failed: ' + JSON.stringify(error));
+      return '';
+    }
+  }
+
   public static parseSnapshot(snapshot: CoursePageSnapshot): CourseParseResult {
     const logs: Array<string> = [];
     logs.push('url=' + snapshot.url);
@@ -133,11 +149,14 @@ export class NuistCourseImportService {
     logs.push('apiTermCode=' + snapshot.apiTermCode);
     logs.push('apiTermLabel=' + snapshot.apiTermLabel);
     logs.push('semesterStartDate=' + snapshot.semesterStartDate);
+    logs.push('detectedCurrentWeek=' + snapshot.detectedCurrentWeek.toString());
+    logs.push('detectedCurrentWeekSource=' + snapshot.detectedCurrentWeekSource);
+    logs.push('currentDateIso=' + snapshot.currentDateIso);
     logs.push('apiRowJsonList=' + snapshot.apiRowJsonList.length.toString());
     logs.push('apiLogText=' + snapshot.apiLogText);
 
     if (snapshot.apiRowJsonList.length > 0) {
-      logs.push('apiRowSample=' + snapshot.apiRowJsonList[0].slice(0, 260));
+      logs.push('apiRowSample=' + NuistCourseImportService.normalizeRowFragment(snapshot.apiRowJsonList[0]).slice(0, 260));
     }
     let candidates: Array<JsonCandidate> = NuistCourseImportService.parseFromApiRowJsonList(snapshot.apiRowJsonList, logs);
     if (candidates.length === 0) {
@@ -149,7 +168,8 @@ export class NuistCourseImportService {
 
     const termLabel: string = snapshot.apiTermLabel.trim().length > 0 ? snapshot.apiTermLabel :
       NuistCourseImportService.extractTermLabel(snapshot.text, snapshot.html);
-    const termStartDate: string = NuistCourseImportService.normalizeSemesterStartDate(snapshot.semesterStartDate);
+    const termStartDate: string = NuistCourseImportService.resolveTermStartDate(snapshot.semesterStartDate,
+      snapshot.detectedCurrentWeek, snapshot.currentDateIso, logs);
     const courses: Array<Course> = NuistCourseImportService.buildCourseList(candidates, termLabel, logs);
     if (courses.length === 0) {
       console.error('[NuistCourseImportService] 导入失败：' + logs.join(' | '));
@@ -170,6 +190,25 @@ export class NuistCourseImportService {
     };
   }
 
+  // [动态周数校准] 优先使用总课表页实时识别到的当前周数回推首周，避免随时间推移后静态偏移失效。
+  private static resolveTermStartDate(rawValue: string, detectedCurrentWeek: number, currentDateIso: string,
+    logs: Array<string>): string {
+    const normalizedStartDate: string = NuistCourseImportService.normalizeSemesterStartDate(rawValue);
+    const safeCurrentWeek: number = detectedCurrentWeek >= 1 && detectedCurrentWeek <= 30 ? detectedCurrentWeek : 0;
+    if (safeCurrentWeek <= 0) {
+      logs.push('termStartDateStrategy=raw');
+      return normalizedStartDate;
+    }
+    const currentDate: Date = NuistCourseImportService.parseCurrentDate(currentDateIso);
+    const currentMonday: Date = NuistCourseImportService.getMonday(currentDate);
+    currentMonday.setDate(currentMonday.getDate() - (safeCurrentWeek - 1) * 7);
+    const resolvedDate: string = NuistCourseImportService.formatDate(currentMonday);
+    logs.push('termStartDateStrategy=dynamic');
+    logs.push('termStartDateDynamic=' + resolvedDate);
+    logs.push('termStartDateRaw=' + normalizedStartDate);
+    return resolvedDate;
+  }
+
   private static normalizeSemesterStartDate(rawValue: string): string {
     const normalized: string = rawValue.trim();
     if (normalized.length === 0) {
@@ -179,17 +218,35 @@ export class NuistCourseImportService {
     if (match !== null && match.length >= 2) {
       const datePart: string = match[1];
       const date: Date = new Date(datePart);
-      const day: number = date.getDay();
-      const diff: number = day === 0 ? -6 : 1 - day;
-      date.setDate(date.getDate() + diff);
-      // [南信大课表] cxjcs 返回的是学期起始周口径，和教学课表首周存在 1 周偏移，这里顺延到课表首周。
-      date.setDate(date.getDate() - 14);
-      const year: string = date.getFullYear().toString();
-      const month: string = (date.getMonth() + 1).toString().padStart(2, '0');
-      const dayText: string = date.getDate().toString().padStart(2, '0');
-      return year + '-' + month + '-' + dayText;
+      return NuistCourseImportService.formatDate(NuistCourseImportService.getMonday(date));
     }
     return normalized;
+  }
+
+  private static parseCurrentDate(currentDateIso: string): Date {
+    const trimmed: string = currentDateIso.trim();
+    if (trimmed.length > 0) {
+      const parsedDate: Date = new Date(trimmed);
+      if (!isNaN(parsedDate.getTime())) {
+        return parsedDate;
+      }
+    }
+    return new Date();
+  }
+
+  private static getMonday(date: Date): Date {
+    const current: Date = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const day: number = current.getDay();
+    const diff: number = day === 0 ? -6 : 1 - day;
+    current.setDate(current.getDate() + diff);
+    return current;
+  }
+
+  private static formatDate(date: Date): string {
+    const year: string = date.getFullYear().toString();
+    const month: string = (date.getMonth() + 1).toString().padStart(2, '0');
+    const dayText: string = date.getDate().toString().padStart(2, '0');
+    return year + '-' + month + '-' + dayText;
   }
 
   private static buildCourseList(candidates: Array<JsonCandidate>, termLabel: string,
@@ -231,10 +288,10 @@ export class NuistCourseImportService {
     return result;
   }
 
-  private static parseFromApiRowJsonList(apiRowJsonList: Array<string>, logs: Array<string>): Array<JsonCandidate> {
+  private static parseFromApiRowJsonList(apiRowJsonList: Array<Object | string>, logs: Array<string>): Array<JsonCandidate> {
     const result: Array<JsonCandidate> = [];
     for (let index = 0; index < apiRowJsonList.length; index++) {
-      const rowJson: string = apiRowJsonList[index];
+      const rowJson: string = NuistCourseImportService.normalizeRowFragment(apiRowJsonList[index]);
       const parsedFromMeeting: Array<JsonCandidate> = NuistCourseImportService.parseMeetingCandidatesFromRowJson(rowJson);
       if (parsedFromMeeting.length > 0) {
         for (let meetingIndex = 0; meetingIndex < parsedFromMeeting.length; meetingIndex++) {
@@ -356,10 +413,11 @@ export class NuistCourseImportService {
   }
 
 
-  private static parseFromRawJsonHeuristic(apiRowJsonList: Array<string>, logs: Array<string>): Array<JsonCandidate> {
+  private static parseFromRawJsonHeuristic(apiRowJsonList: Array<Object | string>, logs: Array<string>): Array<JsonCandidate> {
     const result: Array<JsonCandidate> = [];
     for (let index = 0; index < apiRowJsonList.length; index++) {
-      const candidate: JsonCandidate = NuistCourseImportService.parseGenericCandidateFromRowJson(apiRowJsonList[index]);
+      const rowJson: string = NuistCourseImportService.normalizeRowFragment(apiRowJsonList[index]);
+      const candidate: JsonCandidate = NuistCourseImportService.parseGenericCandidateFromRowJson(rowJson);
       if (candidate.courseName.trim().length > 0 && candidate.dayOfWeek > 0 && candidate.startSection > 0) {
         result.push(candidate);
       }

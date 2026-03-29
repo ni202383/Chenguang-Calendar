@@ -1,9 +1,11 @@
+
 {
   "src": [
     "pages/Start",
     "pages/AlmanacAllData",
     "pages/Settings",
     "pages/CountdownList",
-    "pages/CourseImport"
+    "pages/CourseImport",
+    "pages/ExamImport"
   ]
 }

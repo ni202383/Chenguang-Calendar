@@ -9,6 +9,8 @@ import { Festival_SolarTerms } from "../Model/Festival_SolarTerms";
 import { TaskListGrid } from "./DailyTask/TaskListGrid";
 import { router } from "@kit.ArkUI"; // [课程导入] 跳转至课表导入页。
 import { WeekCourseList } from "./Course/CourseSection"; // [课程导入] 周视图课程展示组件。
+import { WeekExamList } from "./Exam/ExamSection"; // [考试导入] 周视图考试展示组件。
+import { courseStore } from "../Model/CourseStore"; // [当前周显示] 读取已导入课表对应的教学周。
 
 @Extend(ListItem) function ListItemStyle() {
   .height(100)
@@ -50,6 +52,13 @@ export struct WeekViewDetail{
   private festivalList : Array<Festival_SolarTerms> = [];
   private solarTermsList : Array<Festival_SolarTerms> = [];
   @StorageProp('isExportCourseSchedule') isExportCourseSchedule : boolean = false;
+  @StorageProp('isExportExamSchedule') isExportExamSchedule : boolean = false;
+
+  // [当前周显示] 顶部课程区展示当前教学周，位置放在标题与重新导入按钮之间。
+  private getCurrentCourseWeekText(): string {
+    // [当前周显示] 按当前周视图锚点日期动态计算，切换周后中间周数同步更新。
+    return courseStore.getAcademicWeekTextByDate(new Date(this.currentYear, this.currentMonth - 1, this.selectedDay));
+  }
 
   aboutToAppear(): void {
     this.currentYear = this.perWeekInfo.getYear();
@@ -294,24 +303,43 @@ export struct WeekViewDetail{
 
       // [课程导入] 周视图展示本周课程，并在导入后提供重新导入按钮。
       Row() {
-        Text('本周课程')
-          .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ? 18 : 25)
-          .fontWeight(FontWeight.Bold)
-        if (this.isExportCourseSchedule) {
-          Button('重新导入')
-            .type(ButtonType.Capsule)
-            .backgroundColor(Color.White)
-            .fontColor(this.themeColor)
-            .border({ width: 1, color: this.themeColor, radius: 20 })
-            .onClick(() => {
-              this.getUIContext().getRouter().pushUrl({
-                url: 'pages/CourseImport'
-              }, router.RouterMode.Standard)
-            })
+        Row() {
+          Text('本周课程')
+            .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ? 18 : 25)
+            .fontWeight(FontWeight.Bold)
         }
+        .width('33%')
+        .justifyContent(FlexAlign.Start)
+
+        Row() {
+          if (this.isExportCourseSchedule && this.getCurrentCourseWeekText().length > 0) {
+            Text(this.getCurrentCourseWeekText())
+              .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ? 18 : 25)
+              .fontWeight(FontWeight.Bold)
+              .fontColor(this.themeColor)
+          }
+        }
+        .width('34%')
+        .justifyContent(FlexAlign.Center)
+
+        Row() {
+          if (this.isExportCourseSchedule) {
+            Button('重新导入')
+              .type(ButtonType.Capsule)
+              .backgroundColor(Color.White)
+              .fontColor(this.themeColor)
+              .border({ width: 1, color: this.themeColor, radius: 20 })
+              .onClick(() => {
+                this.getUIContext().getRouter().pushUrl({
+                  url: 'pages/CourseImport'
+                }, router.RouterMode.Standard)
+              })
+          }
+        }
+        .width('33%')
+        .justifyContent(FlexAlign.End)
       }
       .width(BasicConstant.FULL_WIDTH)
-      .justifyContent(FlexAlign.SpaceBetween)
 
       if(!this.isExportCourseSchedule){
         Column(){
@@ -335,6 +363,58 @@ export struct WeekViewDetail{
           anchorDate: new Date(this.currentYear, this.currentMonth - 1, this.selectedDay)
         })
       }
+
+      // [考试导入] 周视图在课程列表下方展示本周考试安排。
+      // Row() {
+      //   Row() {
+      //     Text('本周考试')
+      //       .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ? 18 : 25)
+      //       .fontWeight(FontWeight.Bold)
+      //   }
+      //   .width('66%')
+      //   .justifyContent(FlexAlign.Start)
+      //
+      //   Row() {
+      //     if (this.isExportExamSchedule) {
+      //       Button('重新导入')
+      //         .type(ButtonType.Capsule)
+      //         .backgroundColor(Color.White)
+      //         .fontColor(this.themeColor)
+      //         .border({ width: 1, color: this.themeColor, radius: 20 })
+      //         .onClick(() => {
+      //           this.getUIContext().getRouter().pushUrl({
+      //             url: 'pages/ExamImport'
+      //           }, router.RouterMode.Standard)
+      //         })
+      //     }
+      //   }
+      //   .width('34%')
+      //   .justifyContent(FlexAlign.End)
+      // }
+      // .width(BasicConstant.FULL_WIDTH)
+      //
+      // if(!this.isExportExamSchedule){
+      //   Column(){
+      //     Button('一键导入考试安排（南信大）')
+      //       .type(ButtonType.Capsule)
+      //       .backgroundColor(this.themeColor)
+      //       .foregroundColor(Color.White)
+      //       .onClick(() => {
+      //         this.getUIContext().getRouter().pushUrl({
+      //           url: 'pages/ExamImport'
+      //         }, router.RouterMode.Standard)
+      //       })
+      //   }
+      //   .width(BasicConstant.FULL_WIDTH)
+      //   .height(100)
+      //   .alignItems(HorizontalAlign.Center)
+      //   .justifyContent(FlexAlign.Center)
+      //
+      // } else {
+      //   WeekExamList({
+      //     anchorDate: new Date(this.currentYear, this.currentMonth - 1, this.selectedDay)
+      //   })
+      // }
 
       Text('本周日程')
         .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?

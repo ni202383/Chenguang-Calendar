@@ -14,6 +14,8 @@ import { ViewArkUIConstant } from "../../Constants/ArkUIConstant";
 import { SolarTermsDetailData } from "../../data/SolarTermsDetailData";
 import { FestivalDetailData } from "../../data/FestivalDetailData";
 import { TodayCourseList } from "./Course/CourseSection"; // [课程导入] 月视图中的课程列表组件。
+import { TodayExamList } from "./Exam/ExamSection"; // [考试导入] 月视图中的考试列表组件。
+import { courseStore } from "../Model/CourseStore"; // [当前周显示] 读取已导入课表对应的教学周。
 
 @Extend(Circle) function allDayCircle(currentBreakpoint : string,themeColor : string){
   .width(
@@ -107,6 +109,13 @@ export struct MonthViewDetail{
   @StorageLink('isShowSolarTermsDetail') isShowSolarTermsDetail : boolean = false;
   @StorageLink('detailedSolarTermsName') detailedSolarTermsName : string = '';
   @StorageProp('isExportCourseSchedule') isExportCourseSchedule : boolean = false;
+  @StorageProp('isExportExamSchedule') isExportExamSchedule : boolean = false;
+
+  // [当前周显示] 顶部课程区展示当前教学周，位置放在标题与重新导入按钮之间。
+  private getCurrentCourseWeekText(): string {
+    // [当前周显示] 按当前选中的日期动态计算，切换月内日期后周数实时变化。
+    return courseStore.getAcademicWeekTextByDate(new Date(this.currentYear, this.currentMonth - 1, this.selectedDay));
+  }
 
   aboutToAppear(): void {
     this.currentYear = this.perMonthInfo.getYear();
@@ -723,25 +732,44 @@ export struct MonthViewDetail{
 
       // [课程导入] 月视图顶部展示当前选中日期的课程，并保留重新导入入口。
       Row() {
-        Text('今日课程')
-          .titleStyle(this.currentBreakpoint)
-        if (this.isExportCourseSchedule) {
-          Button('重新导入')
-            .type(ButtonType.Capsule)
-            .backgroundColor(Color.White)
-            .fontColor(this.themeColor)
-            .border({ width: 1, color: this.themeColor, radius: 20 })
-            .onClick(() => {
-              this.getUIContext().getRouter().pushUrl({
-                url: 'pages/CourseImport'
-              }, router.RouterMode.Standard,(err) => {
-                console.log('error')
-              })
-            })
+        Row() {
+          Text(`${currentDateDiff(new Date(this.currentDailyInfo.getYear(), this.currentDailyInfo.getMonth() - 1,
+            this.selectedDay))}的课程`)
+            .titleStyle(this.currentBreakpoint)
         }
+        .width('33%')
+        .justifyContent(FlexAlign.Start)
+
+        Row() {
+          if (this.isExportCourseSchedule && this.getCurrentCourseWeekText().length > 0) {
+            Text(this.getCurrentCourseWeekText())
+              .titleStyle(this.currentBreakpoint)
+              .fontColor(this.themeColor)
+          }
+        }
+        .width('34%')
+        .justifyContent(FlexAlign.Center)
+
+        Row() {
+          if (this.isExportCourseSchedule) {
+            Button('重新导入')
+              .type(ButtonType.Capsule)
+              .backgroundColor(Color.White)
+              .fontColor(this.themeColor)
+              .border({ width: 1, color: this.themeColor, radius: 20 })
+              .onClick(() => {
+                this.getUIContext().getRouter().pushUrl({
+                  url: 'pages/CourseImport'
+                }, router.RouterMode.Standard,(err) => {
+                  console.log('error')
+                })
+              })
+          }
+        }
+        .width('33%')
+        .justifyContent(FlexAlign.End)
       }
       .width(BasicConstant.FULL_WIDTH)
-      .justifyContent(FlexAlign.SpaceBetween)
 
       Column({ space: 10 }) {
         if(!this.isExportCourseSchedule){
@@ -764,7 +792,60 @@ export struct MonthViewDetail{
       .height(!this.isExportCourseSchedule ? 100 : 'auto')
       .justifyContent(FlexAlign.Center)
 
-      Text('今日日程')
+      // [考试导入] 月视图在课程列表下方展示所选日期的考试安排。
+      // Row() {
+      //   Row() {
+      //     Text(`${currentDateDiff(new Date(this.currentDailyInfo.getYear(), this.currentDailyInfo.getMonth() - 1,
+      //       this.selectedDay))}的考试`)
+      //       .titleStyle(this.currentBreakpoint)
+      //   }
+      //   .width('66%')
+      //   .justifyContent(FlexAlign.Start)
+      //
+      //   Row() {
+      //     if (this.isExportExamSchedule) {
+      //       Button('重新导入')
+      //         .type(ButtonType.Capsule)
+      //         .backgroundColor(Color.White)
+      //         .fontColor(this.themeColor)
+      //         .border({ width: 1, color: this.themeColor, radius: 20 })
+      //         .onClick(() => {
+      //           this.getUIContext().getRouter().pushUrl({
+      //             url: 'pages/ExamImport'
+      //           }, router.RouterMode.Standard,(err) => {
+      //             console.log('error')
+      //           })
+      //         })
+      //     }
+      //   }
+      //   .width('34%')
+      //   .justifyContent(FlexAlign.End)
+      // }
+      // .width(BasicConstant.FULL_WIDTH)
+      //
+      // Column({ space: 10 }) {
+      //   if(!this.isExportExamSchedule){
+      //     Button('一键导入考试安排（南信大）')
+      //       .type(ButtonType.Capsule)
+      //       .backgroundColor(this.themeColor)
+      //       .foregroundColor(Color.White)
+      //       .onClick(() => {
+      //         this.getUIContext().getRouter().pushUrl({
+      //           url: 'pages/ExamImport'
+      //         }, router.RouterMode.Standard)
+      //       })
+      //   } else {
+      //     TodayExamList({
+      //       targetDate: new Date(this.currentYear, this.currentMonth - 1, this.selectedDay)
+      //     })
+      //   }
+      // }
+      // .width(BasicConstant.FULL_WIDTH)
+      // .height(!this.isExportExamSchedule ? 100 : 'auto')
+      // .justifyContent(FlexAlign.Center)
+
+      Text(`${currentDateDiff(new Date(this.currentDailyInfo.getYear(), this.currentDailyInfo.getMonth() - 1,
+        this.selectedDay))}的日程`)
         .titleStyle(this.currentBreakpoint)
       DailyTaskList({
         currentYear: this.currentYear,

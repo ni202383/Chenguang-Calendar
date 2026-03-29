@@ -19,8 +19,8 @@
       {
         "name": "default",
         "signingConfig": "default",
-        "targetSdkVersion": "6.0.0(20)",
-        "compatibleSdkVersion": "6.0.0(20)",
+        "targetSdkVersion": "6.0.1(21)",
+        "compatibleSdkVersion": "6.0.1(21)",
         "runtimeOS": "HarmonyOS",
         "buildOption": {
           "strictMode": {
@@ -43,8 +43,8 @@
         "bundleName": "com.example.chenguangCalendar",
         "config": [
           {
-            "name": "Push Kit",
-            "capability": "com.huawei.service.push.base_service"
+            "capability": "com.huawei.service.push.base_service",
+            "name": "Push Kit"
           }
         ]
       }
