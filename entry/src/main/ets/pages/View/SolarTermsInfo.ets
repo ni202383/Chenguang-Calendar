@@ -146,6 +146,15 @@ export struct SolarTermsInfo{
     })
   }
 
+  onBackPress(): boolean | void {
+    this.getUIContext().animateTo({
+      curve : Curve.EaseInOut,
+      duration : 400
+    },() => {
+      this.isShowSolarTermsDetail = !this.isShowSolarTermsDetail;
+    })
+  }
+
   build() {
     Column({space : 15}){
       Row(){
@@ -157,8 +166,7 @@ export struct SolarTermsInfo{
           }
           .attributeModifier(new ButtonModifier(
             this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40,
-            this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40,
-            $r('app.color.background_gray')
+            this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40
           ))
           .onClick((event: ClickEvent) => {
             this.getUIContext().animateTo({
@@ -241,5 +249,6 @@ export struct SolarTermsInfo{
     .backgroundColor($r('app.color.backgroundcolor'))
     .alignItems(HorizontalAlign.Start)
     .justifyContent(FlexAlign.Start)
+    .padding({top : this.getUIContext().px2vp(this.topStatusBarHeight)})
   }
 }

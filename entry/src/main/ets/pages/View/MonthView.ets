@@ -22,13 +22,13 @@ export struct MonthView {
   private swiperController: SwiperController = new SwiperController();
   @Consume('currentIndexInMonthView') @Watch('ChangeToSpecifiedIndex') currentIndex: number; //当前轮播图的索引
   private preIndex: number = this.monthDataSource.getInitialIndex();
-  private weekArray: Array<string> = ['日', '一', '二', '三', '四', '五', '六'];
   @StorageProp(BreakpointConstant.CURRENT_BREAKPOINT) currentBreakpoint: string = BreakpointConstant.BREAKPOINT_SM;
   @State @Watch('rowCompensateY') yOffset: number = 0;
   private holdDistance: number = 0;
   private viewSize: number = Math.floor((this.screenWidth - 30) / 7); //用于计算每个窗口中圆形框的尺寸
   private viewSizeHeightMD = this.viewSize / 2;
   private scroller: Scroller = new Scroller();
+  @StorageProp('topStatusBarHeight') topStatusBarHeight : number = 0;//顶部状态栏高度
 
   aboutToAppear(): void {
     this.preIndex = this.currentIndex;
@@ -51,23 +51,6 @@ export struct MonthView {
 
   build() {
     Stack({ alignContent: Alignment.Top }) {
-      Row() {
-        ForEach(this.weekArray, (item: string, index: number) => {
-          Text(item)
-            .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-              ViewArkUIConstant.WEEK_ARRAY_FONTSIZE_SM : this.currentBreakpoint == BreakpointConstant.BREAKPOINT_MD
-                ? ViewArkUIConstant.WEEK_ARRAY_FONTSIZE_MD : ViewArkUIConstant.WEEK_ARRAY_FONTSIZE_LG)
-            .fontColor(index == ViewArkUIConstant.WEEK_ARRAY_SUNDAY_INDEX ||
-              index == ViewArkUIConstant.WEEK_ARRAY_SATURDAY_INDEX ? $r('app.color.gray_deep') : Color.Black)
-        }, (item: string) => item)
-      }
-      .width(BasicConstant.FULL_WIDTH)
-      .height(ViewArkUIConstant.WEEK_ARRAY_HEIGHT)
-      .zIndex(10)
-      .backgroundColor($r('app.color.backgroundcolor'))
-      .justifyContent(FlexAlign.SpaceAround)
-      .translate({ x: 0, y: -this.rowCompensateY() })
-
       Scroll(this.scroller) {
         Swiper(this.swiperController) {
           LazyForEach(this.monthDataSource, (item_: PerMonthInfo, index: number) => {
@@ -95,13 +78,13 @@ export struct MonthView {
       }
       .width(BasicConstant.FULL_WIDTH)
       .height(BasicConstant.FULL_HEIGHT)
-      .layoutWeight(ViewArkUIConstant.SCROLL_LAYOUT_WEIGHT) // 添加权重，让Scroll占据剩余空间
+      .layoutWeight(1) // 添加权重，让Scroll占据剩余空间
       .scrollable(ScrollDirection.Vertical)
       .scrollBar(BarState.Off) // 显示滚动条便于调试
       .edgeEffect(EdgeEffect.Spring) // 添加边缘效果
       .padding({
         bottom: this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 0,
-        top: ViewArkUIConstant.WEEK_ARRAY_HEIGHT
+        top: 115 + this.getUIContext().px2vp(this.topStatusBarHeight)
       })
       .id('adjustSheetDialog')
       .align(Alignment.Top) //让scroll里面的元素从最上面开始排
@@ -109,6 +92,5 @@ export struct MonthView {
         this.yOffset += y;
       })
     }
-
   }
 }

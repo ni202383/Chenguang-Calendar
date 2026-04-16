@@ -15,14 +15,9 @@ export struct DailyTaskListItem {
   @Link selectedDay: number;
   isMonth : boolean = true;
   isDay : boolean = false;
-
-  @Styles
-  columnStyle(){
-    .width(BasicConstant.FULL_WIDTH)
-    .borderRadius(ViewArkUIConstant.TASK_LIST_ITEM_WHOLE_BORDER_RADIUS)
-    .backgroundColor(Color.White)
-    .padding(ViewArkUIConstant.TASK_LIST_ITEM_WHOLE_PADDING)
-  }
+  @StorageProp('agentFocusTaskId') agentFocusTaskId: string = '';
+  @StorageProp('themeColor') themeColor: string = '#EA5C2E';
+  @StorageProp('topStatusBarHeight') topStatusBarHeight : number = 0;//顶部状态栏高度
 
   build() {//日程列表卡片的ArkUI
     Column({ space: ViewArkUIConstant.TASK_LIST_ITEM_WHOLE_COLUMN_GAP_SPACE }) {
@@ -72,7 +67,7 @@ export struct DailyTaskListItem {
         }
         .width(ViewArkUIConstant.TASK_LIST_ITEM_TASK_TIME_WIDTH_PERCENTAGE)
         .height(BasicConstant.FULL_HEIGHT)
-        .justifyContent(FlexAlign.Center)
+        .justifyContent(FlexAlign.Start)
         .alignItems(HorizontalAlign.Center)
 
         Column({ space: ViewArkUIConstant.TASK_LIST_ITEM_BOTTOM_RIGHT_COLUMN_GAP_SPACE }) {
@@ -101,10 +96,23 @@ export struct DailyTaskListItem {
       .alignItems(VerticalAlign.Center)
 
     }
-    .columnStyle()
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
     .width(BasicConstant.FULL_WIDTH)
     .height(BasicConstant.FULL_HEIGHT)
+    .borderRadius(ViewArkUIConstant.TASK_LIST_ITEM_WHOLE_BORDER_RADIUS)
+    .backgroundColor(this.task.getId() == this.agentFocusTaskId ? 'rgba(255,249,196,0.95)' : Color.White)
+    .padding(ViewArkUIConstant.TASK_LIST_ITEM_WHOLE_PADDING)
+    .border({
+      width: this.task.getId() == this.agentFocusTaskId ? 2 : 0,
+      color: this.task.getId() == this.agentFocusTaskId ? this.themeColor : Color.Transparent,
+      radius: ViewArkUIConstant.TASK_LIST_ITEM_WHOLE_BORDER_RADIUS
+    })
+    .shadow({
+      radius: this.task.getId() == this.agentFocusTaskId ? 12 : 0,
+      color: this.task.getId() == this.agentFocusTaskId ? '#26EA5C2E' : Color.Transparent,
+      offsetX: 0,
+      offsetY: 2
+    })
   }
 }

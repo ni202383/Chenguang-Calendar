@@ -46,6 +46,9 @@ export default class EntryAbility extends UIAbility {
 
       windowStage.getMainWindow().then(w => {
         w.setWindowLayoutFullScreen(true)
+        w.setWindowSystemBarProperties({
+          statusBarColor : '#00000000'
+        })
         let topStatusBarHeight = w.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM).topRect.height;
         let bottomStatusBarHeight = w.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM).bottomRect.height;
         let leftGap = w.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM).leftRect.width
@@ -54,6 +57,15 @@ export default class EntryAbility extends UIAbility {
         AppStorage.setOrCreate('bottomStatusBarHeight', bottomStatusBarHeight);
         AppStorage.setOrCreate('windowLeftGap',leftGap);
         AppStorage.setOrCreate('windowRightGap',rightGap);
+      AppStorage.setOrCreate('agentRootTabIndex', 2);
+      AppStorage.setOrCreate('agentRootTabVersion', 0);
+      AppStorage.setOrCreate('agentCalendarJumpDate', '');
+      AppStorage.setOrCreate('agentCalendarJumpViewType', 'day');
+      AppStorage.setOrCreate('agentCalendarJumpVersion', 0);
+      AppStorage.setOrCreate('agentFocusTaskId', '');
+      AppStorage.setOrCreate('agentFocusTaskVersion', 0);
+      AppStorage.setOrCreate('agentFocusCountDownId', '');
+      AppStorage.setOrCreate('agentFocusCountDownVersion', 0);
       })
 
       if (err.code) {

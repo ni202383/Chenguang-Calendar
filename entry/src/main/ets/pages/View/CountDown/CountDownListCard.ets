@@ -12,6 +12,8 @@ import { EventCountDown } from "../../Model/EventCountDown"
 @Component
 export struct CountDownListCard {
   @ObjectLink eventCountDown: EventCountDown;
+  @StorageProp('agentFocusCountDownId') agentFocusCountDownId: string = '';
+  @StorageProp('themeColor') themeColor: string = '#EA5C2E';
 
   @State private remainText: string = '';
 
@@ -34,9 +36,12 @@ export struct CountDownListCard {
     }
   }
 
+  private isFocused(): boolean {
+    return this.eventCountDown.getId() == this.agentFocusCountDownId;
+  }
+
   // 计算“整年整月整日”差值（只用于显示 Y/M/D，不走毫秒换算）
   private diffYMD(from: Date, to: Date): [number,number,number] {
-    // 保证 from <= to
     let start = new Date(from.getFullYear(), from.getMonth(), from.getDate());
     let end = new Date(to.getFullYear(), to.getMonth(), to.getDate());
 
@@ -49,9 +54,8 @@ export struct CountDownListCard {
     let days = end.getDate() - start.getDate();
 
     if (days < 0) {
-      // 借一个月
       months -= 1;
-      const prevMonthEnd = new Date(end.getFullYear(), end.getMonth(), 0); // end上个月最后一天
+      const prevMonthEnd = new Date(end.getFullYear(), end.getMonth(), 0);
       days += prevMonthEnd.getDate();
     }
     if (months < 0) {
@@ -85,49 +89,38 @@ export struct CountDownListCard {
 
     if (diffMs <= 0) return '已到达';
 
-    // 是否进入 1 天以内：用毫秒判断最准确
     const oneDayMs = 24 * 60 * 60 * 1000;
     if (diffMs < oneDayMs) {
       const time = this.diffHMS(diffMs);
       hours = time[0];
       minutes = time[1];
       seconds = time[2];
-      // <1天：只显示 时分秒（不用冒号）
-      // 0小时就不显示小时，分钟/秒同理
       let s = '';
       if (hours > 0) s += `${hours}时`;
       if (minutes > 0) s += `${minutes}分`;
-      // 秒建议始终显示，体验更像倒计时
       s += `${seconds}秒`;
       return s;
     }
 
-    // >=1天：显示 Y/M/D 的层级（并且 0 不显示）
     const time = this.diffYMD(now, target);
     years = time[0];
     months = time[1];
     days = time[2];
 
     if (years >= 1) {
-      // >=1年：显示 年月日（都用剩余量）
       let s = `${years}年`;
-      // months/days 可能为0，按你的规则：0就不显示
       if (months > 0) s += `${months}月`;
       if (days > 0) s += `${days}日`;
-      // 如果刚好整年（months=days=0），至少显示“X年”
       return s;
     }
 
     if (months >= 1) {
-      // >=1月 <1年：显示 月日
       let s = `${months}月`;
       if (days > 0) s += `${days}日`;
       return s;
     }
 
-    // >=1天 <1月：显示 日
-    // days 在 diffYMD 里可能为0（比如刚好整月/整年已在上面处理）
-    const d = Math.max(1, days); // 到这里至少 >=1天，避免显示“0日”
+    const d = Math.max(1, days);
     return `${d}日`;
   }
 
@@ -149,7 +142,6 @@ export struct CountDownListCard {
 
     const oneDayMs = 24 * 60 * 60 * 1000;
 
-    // <1天：秒级更新
     if (diffMs < oneDayMs) {
       this.secondTimer = setInterval(() => {
         this.updateRemainText();
@@ -157,7 +149,6 @@ export struct CountDownListCard {
       return;
     }
 
-    // >=1天：到下一个午夜更新一次，然后每天更新
     const now = new Date();
     const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
     const delay = Math.max(0, nextMidnight.getTime() - now.getTime() + 50);
@@ -200,7 +191,18 @@ export struct CountDownListCard {
     .width(BasicConstant.FULL_WIDTH)
     .height(BasicConstant.FULL_HEIGHT)
     .borderRadius(20)
-    .backgroundColor(Color.White)
+    .backgroundColor(this.isFocused() ? 'rgba(255,249,196,0.95)' : Color.White)
+    .border({
+      width: this.isFocused() ? 2 : 0,
+      color: this.isFocused() ? this.themeColor : Color.Transparent,
+      radius: 20
+    })
+    .shadow({
+      radius: this.isFocused() ? 14 : 0,
+      color: this.isFocused() ? '#26EA5C2E' : Color.Transparent,
+      offsetX: 0,
+      offsetY: 3
+    })
     .clickEffect({
       level : ClickEffectLevel.LIGHT,
       scale : 0.9

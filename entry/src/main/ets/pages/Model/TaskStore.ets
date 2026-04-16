@@ -1,204 +1,222 @@
-import { upper_bound } from "../../Utils/ViewUtils";
-import { Task, TaskPlain } from "./DailyTask";
-import { common } from "@kit.AbilityKit";
+import { upper_bound } from '../../Utils/ViewUtils';
+import { Task, TaskPlain } from './DailyTask';
+import { common } from '@kit.AbilityKit';
 import dataPreferences from '@ohos.data.preferences';
 
 export class TaskStore {
-  private taskStore: Map<string, Array<Task>> = new Map<string, Array<Task>>();
   private static readonly PREF_NAME: string = 'task_store';
   private static readonly KEY_DATA: string = 'tasks_json';
+  private static readonly LOG_PREFIX: string = '[CHENGGUANG_TASK_STORE]';
+
+  private taskStore: Map<string, Array<Task>> = new Map<string, Array<Task>>();
   private context?: common.UIAbilityContext;
   private pref?: dataPreferences.Preferences;
 
-  /**
-   * 必须在应用启动时调用一次
-   * 例如在 EntryAbility.onCreate 里：
-   *   await taskStore.init(this.context);
-   */
-  public async init(context: common.UIAbilityContext) {
+  public async init(context: common.UIAbilityContext): Promise<void> {
     this.context = context;
     this.pref = await dataPreferences.getPreferences(context, TaskStore.PREF_NAME);
     await this.loadFromDisk();
   }
 
-  private async loadFromDisk() {
-    if (!this.pref) {
+  private async loadFromDisk(): Promise<void> {
+    if (this.pref === undefined) {
       return;
     }
-    const json = await this.pref.get(TaskStore.KEY_DATA, '') as string;
-    if (!json || json.trim().length === 0) {
-      return;
-    }
+    const json: string = await this.pref.get(TaskStore.KEY_DATA, '') as string;
+    this.rebuildFromJsonText(json);
+  }
 
+  private ensureSyncPreferences(): boolean {
+    if (this.pref !== undefined) {
+      return true;
+    }
+    if (this.context === undefined) {
+      console.error(TaskStore.LOG_PREFIX + ' context 未初始化，请先在 EntryAbility 中调用 taskStore.init(this.context)');
+      return false;
+    }
     try {
-      // { [dateKey: string]: TaskPlain[] }
-      const obj = JSON.parse(json) as Record<string, TaskPlain[]>;
-      this.taskStore.clear();
-      Object.entries(obj).forEach((entry) => {
-        const dateKey = entry[0];
-        const plainArray = entry[1];
-        const tasks = plainArray.map(p => Task.fromPlainObject(p));
-        this.taskStore.set(dateKey, tasks);
-      });
-      // 恢复 Task.static_number，避免 ID 冲突
-      let maxIdNum = 0;
-      for (const entry of this.taskStore) {
-        const arr = entry[1];
-        for (const task of arr) {
-          const id = task.getId();
-          if (!id) continue;
-          const parts = id.split('-');
-          const last = parts[parts.length - 1];
-          const n = Number(last);
-          if (!Number.isNaN(n)) {
-            maxIdNum = Math.max(maxIdNum, n);
-          }
-        }
-      }
-      if (typeof Task.static_number === 'number') {
-        Task.static_number = Math.max(Task.static_number, maxIdNum + 1);
-      }
-
-      console.info('[TaskStore] loadFromDisk success');
-    } catch (e) {
-      console.error('[TaskStore] loadFromDisk JSON 解析失败: ' + (e as Error).message);
+      this.pref = dataPreferences.getPreferencesSync(this.context, { name: TaskStore.PREF_NAME });
+      return true;
+    } catch (error) {
+      const err: Error = error as Error;
+      console.error(TaskStore.LOG_PREFIX + ' getPreferencesSync 失败: ' + err.message);
+      return false;
     }
   }
 
-  // 把 this.taskStore 序列化为 JSON -> 写入 Preferences
-  private async saveToDisk() {
+  private rebuildFromJsonText(json: string): void {
+    this.taskStore.clear();
+    if (json.trim().length === 0) {
+      console.info(TaskStore.LOG_PREFIX + ' load empty');
+      return;
+    }
     try {
-      if (!this.pref) {
-        if (!this.context) return;
-        this.pref = await dataPreferences.getPreferences(this.context, TaskStore.PREF_NAME);
+      const objectMap: Record<string, Array<TaskPlain>> = JSON.parse(json) as Record<string, Array<TaskPlain>>;
+      const keys: Array<string> = Object.keys(objectMap);
+      for (let index: number = 0; index < keys.length; index++) {
+        const dateKey: string = keys[index];
+        const plainArray: Array<TaskPlain> = objectMap[dateKey] ?? [];
+        const taskArray: Array<Task> = [];
+        for (let taskIndex: number = 0; taskIndex < plainArray.length; taskIndex++) {
+          taskArray.push(Task.fromPlainObject(plainArray[taskIndex]));
+        }
+        this.sortTaskArray(taskArray);
+        this.taskStore.set(dateKey, taskArray);
       }
-      const obj: Record<string, TaskPlain[]> = {};
-      for (const entry of this.taskStore.entries()) {
-        const key = entry[0];
-        const taskArray = entry[1];
-        obj[key] = taskArray.map(task => task.toPlainObject());
-      }
+      this.restoreStaticNumber();
+      console.info(TaskStore.LOG_PREFIX + ' load success');
+    } catch (error) {
+      const err: Error = error as Error;
+      console.error(TaskStore.LOG_PREFIX + ' load 失败: ' + err.message);
+      this.taskStore.clear();
+    }
+  }
 
-      const json = JSON.stringify(obj);
-      await this.pref!.put(TaskStore.KEY_DATA, json);
-      await this.pref!.flush();
-      console.info('[TaskStore] saveToDisk success');
-    } catch (e) {
-      console.error('[TaskStore] saveToDisk 失败: ' + (e as Error).message);
+  private restoreStaticNumber(): void {
+    let maxIdNumber: number = 0;
+    const valueArrays: Array<Array<Task>> = Array.from(this.taskStore.values());
+    for (let index: number = 0; index < valueArrays.length; index++) {
+      const taskArray: Array<Task> = valueArrays[index];
+      for (let taskIndex: number = 0; taskIndex < taskArray.length; taskIndex++) {
+        const taskId: string = taskArray[taskIndex].getId();
+        if (taskId.length === 0) {
+          continue;
+        }
+        const parts: Array<string> = taskId.split('-');
+        if (parts.length === 0) {
+          continue;
+        }
+        const lastPart: string = parts[parts.length - 1];
+        const idNumber: number = Number(lastPart);
+        if (!Number.isNaN(idNumber) && idNumber > maxIdNumber) {
+          maxIdNumber = idNumber;
+        }
+      }
+    }
+    if (typeof Task.static_number === 'number') {
+      Task.static_number = Math.max(Task.static_number, maxIdNumber + 1);
+    }
+  }
+
+  private saveToDiskSync(): boolean {
+    if (!this.ensureSyncPreferences()) {
+      return false;
+    }
+    try {
+      const keys: Array<string> = Array.from(this.taskStore.keys());
+      let json: string = '{';
+      for (let index: number = 0; index < keys.length; index++) {
+        const key: string = keys[index];
+        const sourceArray: Array<Task> = this.taskStore.get(key) ?? [];
+        const plainArray: Array<TaskPlain> = [];
+        for (let taskIndex: number = 0; taskIndex < sourceArray.length; taskIndex++) {
+          plainArray.push(sourceArray[taskIndex].toPlainObject());
+        }
+        if (index > 0) {
+          json += ',';
+        }
+        json += JSON.stringify(key) + ':' + JSON.stringify(plainArray);
+      }
+      json += '}';
+      this.pref!.putSync(TaskStore.KEY_DATA, json);
+      this.pref!.flushSync();
+      console.info(TaskStore.LOG_PREFIX + ' save success');
+      return true;
+    } catch (error) {
+      const err: Error = error as Error;
+      console.error(TaskStore.LOG_PREFIX + ' save 失败: ' + err.message);
+      return false;
     }
   }
 
   public dateToString(year: number, month: number, day: number): string {
-    let yearString = year.toString();
-    let monthString = month.toString().padStart(2, '0');
-    let dayString = day.toString().padStart(2, '0');
-    return `${yearString}-${monthString}-${dayString}`;
+    const yearText: string = year.toString();
+    const monthText: string = month.toString().padStart(2, '0');
+    const dayText: string = day.toString().padStart(2, '0');
+    return yearText + '-' + monthText + '-' + dayText;
   }
 
   public updateTask(year: number, month: number, day: number, task: Task): boolean {
-    let key = this.dateToString(year, month, day);
-    let taskArray = this.taskStore.get(key) ?? [];
-    for (let i = 0; i < taskArray.length; ++i) {
-      if (taskArray[i].getId() == task.getId()) {
-        taskArray[i] = task;
+    const key: string = this.dateToString(year, month, day);
+    const taskArray: Array<Task> = this.taskStore.get(key) ?? [];
+    for (let index: number = 0; index < taskArray.length; index++) {
+      if (taskArray[index].getId() === task.getId()) {
+        taskArray[index] = task;
+        this.sortTaskArray(taskArray);
         this.taskStore.set(key, taskArray);
-        this.saveToDisk();
-        return true;
+        return this.saveToDiskSync();
       }
     }
+    console.warn(TaskStore.LOG_PREFIX + ' update miss key=' + key + ' id=' + task.getId());
     return false;
   }
 
-  public addTask(year: number, month: number, day: number, task: Task) {
-    let key = this.dateToString(year, month, day);
-    let taskArray = this.taskStore.get(key) ?? [];
-    let index = upper_bound<Task>(
-      taskArray,
-      task,
-      (first: Task, second: Task) => {
-        if (first.getBeginHour() < second.getBeginHour()) return -1; else if (first.getBeginHour() >
-        second.getBeginHour()) return 1; else {
-          if (first.getBeginMinute() > second.getBeginMinute()) return 1; else if (first.getBeginMinute() <
-          second.getBeginMinute()) return -1; else return 0;
-        }
-      }
-    )
-    task.setId(`${key}-${Task.static_number}`);
-    Task.static_number++;
+  public addTask(year: number, month: number, day: number, task: Task): boolean {
+    const key: string = this.dateToString(year, month, day);
+    const taskArray: Array<Task> = this.taskStore.get(key) ?? [];
+    const index: number = upper_bound<Task>(taskArray, task, (first: Task, second: Task) => {
+      return TaskStore.compareTask(first, second);
+    });
+    task.setId(key + '-' + Task.static_number.toString());
+    Task.static_number += 1;
     taskArray.splice(index, 0, task);
+    this.sortTaskArray(taskArray);
     this.taskStore.set(key, taskArray);
-    this.saveToDisk();
-
+    return this.saveToDiskSync();
   }
 
   public getTask(year: number, month: number, day: number): Array<Task> {
-    const key = this.dateToString(year, month, day);
-
-    // 1. 先保证有 Preferences 实例（用同步接口）
-    if (!this.pref) {
-      if (!this.context) {
-        console.error('[TaskStore] context 未初始化，请先在 EntryAbility 中调用 taskStore.init(this.context)');
-        return [];
-      }
-      try {
-        // API 10+ 支持 getPreferencesSync
-        this.pref = dataPreferences.getPreferencesSync(this.context, { name: TaskStore.PREF_NAME });
-      } catch (e) {
-        console.error('[TaskStore] getPreferencesSync 失败: ' + (e as Error).message);
-        return [];
-      }
+    const key: string = this.dateToString(year, month, day);
+    const sourceArray: Array<Task> = this.taskStore.get(key) ?? [];
+    const result: Array<Task> = [];
+    for (let index: number = 0; index < sourceArray.length; index++) {
+      result.push(sourceArray[index]);
     }
-
-    try {
-      // 2. 从磁盘把整份 JSON 读出来（同步）
-      const json = this.pref.getSync(TaskStore.KEY_DATA, '') as string;
-      if (!json || json.trim().length === 0) {
-        // 没有任何数据，直接返回空
-        this.taskStore.clear();
-        return [];
-      }
-
-      // 3. 解析 JSON -> { [dateKey: string]: TaskPlain[] }
-      const obj = JSON.parse(json) as Record<string, TaskPlain[]>;
-      // 4. 重新构建内存里的 taskStore
-      this.taskStore.clear();
-      Object.entries(obj).forEach((entry) => {
-        const dateKey = entry[0];
-        const plainArray = entry[1];
-        const tasks = plainArray.map(p => Task.fromPlainObject(p));
-        this.taskStore.set(dateKey, tasks);
-      });
-
-      // 5. 返回指定日期的任务数组
-      return this.taskStore.get(key) ?? [];
-    } catch (e) {
-      console.error('[TaskStore] getTask 从磁盘读取失败: ' + (e as Error).message);
-      return [];
-    }
+    return result;
   }
 
   public deleteTask(year: number, month: number, day: number, task: Task): boolean {
-    let key = this.dateToString(year, month, day);
-    let taskArray = this.taskStore.get(key) ?? [];
-    let flag = false;
-    if (taskArray.length == 0) {
-      return false;
-    } else {
-      for (let i = 0; i < taskArray.length; ++i) {
-        if (taskArray[i].getId() == task.getId()) {
-          taskArray.splice(i, 1);
-          flag = true;
-          break;
+    const key: string = this.dateToString(year, month, day);
+    const taskArray: Array<Task> = this.taskStore.get(key) ?? [];
+    for (let index: number = 0; index < taskArray.length; index++) {
+      if (taskArray[index].getId() === task.getId()) {
+        taskArray.splice(index, 1);
+        if (taskArray.length === 0) {
+          this.taskStore.delete(key);
+        } else {
+          this.taskStore.set(key, taskArray);
         }
-      }
-      if (flag) {
-        this.taskStore.set(key, taskArray);
-        this.saveToDisk();
-        return true;
-      } else {
-        return false;
+        return this.saveToDiskSync();
       }
     }
+    console.warn(TaskStore.LOG_PREFIX + ' delete miss key=' + key + ' id=' + task.getId());
+    return false;
+  }
+
+  private sortTaskArray(taskArray: Array<Task>): void {
+    taskArray.sort((first: Task, second: Task) => {
+      return TaskStore.compareTask(first, second);
+    });
+  }
+
+  private static compareTask(first: Task, second: Task): number {
+    const firstMinute: number = first.getBeginHour() * 60 + first.getBeginMinute();
+    const secondMinute: number = second.getBeginHour() * 60 + second.getBeginMinute();
+    if (firstMinute < secondMinute) {
+      return -1;
+    }
+    if (firstMinute > secondMinute) {
+      return 1;
+    }
+    const firstEndMinute: number = first.getEndHour() * 60 + first.getEndMinute();
+    const secondEndMinute: number = second.getEndHour() * 60 + second.getEndMinute();
+    if (firstEndMinute < secondEndMinute) {
+      return -1;
+    }
+    if (firstEndMinute > secondEndMinute) {
+      return 1;
+    }
+    return first.getTitle().localeCompare(second.getTitle(), 'zh-Hans-CN');
   }
 }
 

@@ -140,8 +140,7 @@ struct CountdownList {
           }
           .attributeModifier(new ButtonModifier(
             this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40,
-            this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40,
-            'rgba(232,232,232,0.3)'
+            this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40
           ))
           .onClick(() => {
             this.getUIContext().getRouter().back();

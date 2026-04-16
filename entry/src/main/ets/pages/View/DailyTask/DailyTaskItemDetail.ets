@@ -16,6 +16,7 @@ export struct DailyTaskItemDetail{
   @State returnEnsureSave : boolean = false;
   @StorageProp(BreakpointConstant.CURRENT_BREAKPOINT) currentBreakpoint : string = BreakpointConstant.BREAKPOINT_SM;
   @StorageProp('wholeIndex') wholeIndex : number = 1;
+  @StorageProp('topStatusBarHeight') topStatusBarHeight : number = 0;//顶部状态栏高度
 
   closePage(){
     if(this.ensureUpdateDailyTask){
@@ -82,8 +83,7 @@ export struct DailyTaskItemDetail{
             }
             .attributeModifier(new ButtonModifier(
               this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40,
-              this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40,
-              $r('app.color.background_gray')
+              this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40
             ))
             .onClick((event : ClickEvent) => {
               this.returnFromThisTask.open();
@@ -126,5 +126,6 @@ export struct DailyTaskItemDetail{
     .backgroundColor('rgba(255,255,255,0.3)')
     .backgroundBlurStyle(BlurStyle.Thin)
     .geometryTransition(this.task.getId() + this.wholeIndex.toString())
+    .padding({top : this.getUIContext().px2vp(this.topStatusBarHeight)})
   }
 }

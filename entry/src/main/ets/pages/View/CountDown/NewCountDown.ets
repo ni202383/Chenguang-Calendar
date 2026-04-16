@@ -151,7 +151,6 @@ export struct NewCountDown{
       this.submitCountDownIncompleteDialogController.open();
     } else {
       this.newCountDown.imageIndex = this.imageIndex;
-      countDownStore.addCountDown(this.newCountDown);
       this.isChange = false;
       this.savedId = await countDownStore.addCountDownAndFlush(this.newCountDown);
       this.getUIContext().animateTo({

@@ -159,6 +159,15 @@ export struct FestivalInfo{
     })
   }
 
+  onBackPress(): boolean | void {
+    this.getUIContext().animateTo({
+      curve : Curve.EaseInOut,
+      duration : 400
+    },() => {
+      this.isShowFestivalDetail = !this.isShowFestivalDetail;
+    })
+  }
+
   build() {
     Column({space : 15}){
       Row(){
@@ -170,8 +179,7 @@ export struct FestivalInfo{
           }
           .attributeModifier(new ButtonModifier(
             this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40,
-            this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40,
-            $r('app.color.background_gray')
+            this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40
           ))
           .onClick((event: ClickEvent) => {
             this.getUIContext().animateTo({
@@ -255,5 +263,6 @@ export struct FestivalInfo{
     .backgroundColor($r('app.color.backgroundcolor'))
     .alignItems(HorizontalAlign.Start)
     .justifyContent(FlexAlign.Start)
+    .padding({top : this.getUIContext().px2vp(this.topStatusBarHeight)})
   }
 }

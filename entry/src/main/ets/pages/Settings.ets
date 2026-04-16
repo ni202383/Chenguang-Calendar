@@ -118,8 +118,7 @@ struct Settings {
         }
         .attributeModifier(new ButtonModifier(
           this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40,
-          this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40,
-          $r('app.color.background_gray')
+          this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 50 : 40
         ))
         .onClick((event: ClickEvent) => {
           this.getUIContext().getRouter().back();

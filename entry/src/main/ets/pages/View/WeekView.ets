@@ -14,7 +14,6 @@ export struct WeekView {
   @StorageProp(BreakpointConstant.CURRENT_BREAKPOINT) currentBreakpoint: string = BreakpointConstant.BREAKPOINT_SM;
   private swiperController: SwiperController = new SwiperController();
   private weekDataSource: WeekDataSource = new WeekDataSource(this.currentYear, this.currentMonth, this.selectedDay)
-  private weekArray: Array<string> = ['日', '一', '二', '三', '四', '五', '六'];
   @Link @Watch('ChangeToSpecifiedIndex') currentIndex: number;
   private preIndex : number = this.weekDataSource.getInitialIndex();
   @StorageProp('screenWidth') screenWidth: number = 200;
@@ -22,6 +21,7 @@ export struct WeekView {
   private viewSize: number = Math.floor((this.screenWidth - 30) / 7); //用于计算每个窗口中圆形框的尺寸
   private viewSizeHeightMD = this.viewSize / 2;
   private holdDistance: number = this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ? this.viewSize : this.viewSizeHeightMD;
+  @StorageProp('topStatusBarHeight') topStatusBarHeight : number = 0;//顶部状态栏高度
 
   aboutToAppear(): void {
     this.preIndex = this.currentIndex;
@@ -42,23 +42,6 @@ export struct WeekView {
 
   build() {
     Stack({alignContent : Alignment.Top}) {
-      Row() {
-        ForEach(this.weekArray, (item: string, index: number) => {
-          Text(item)
-            .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-            ViewArkUIConstant.WEEK_ARRAY_FONTSIZE_SM : this.currentBreakpoint == BreakpointConstant.BREAKPOINT_MD
-              ? ViewArkUIConstant.WEEK_ARRAY_FONTSIZE_MD : ViewArkUIConstant.WEEK_ARRAY_FONTSIZE_LG)
-            .fontColor(index == ViewArkUIConstant.WEEK_ARRAY_SUNDAY_INDEX ||
-              index == ViewArkUIConstant.WEEK_ARRAY_SATURDAY_INDEX ? $r('app.color.gray_deep') : Color.Black)
-        }, (item: string) => item)
-      }
-      .width(BasicConstant.FULL_WIDTH)
-      .height(ViewArkUIConstant.WEEK_ARRAY_HEIGHT)
-      .backgroundColor($r('app.color.backgroundcolor'))
-      .zIndex(10)
-      .justifyContent(FlexAlign.SpaceAround)
-      .translate({x : 0,y : -this.rowCompensateY()})
-
       Scroll() {
         Swiper(this.swiperController) {
           LazyForEach(this.weekDataSource, (item_: PerWeekInfo, index: number) => {
@@ -85,15 +68,11 @@ export struct WeekView {
       .scrollable(ScrollDirection.Vertical)
       .scrollBar(BarState.Off) // 显示滚动条便于调试
       .edgeEffect(EdgeEffect.Spring) // 添加边缘效果
-      .padding({top : ViewArkUIConstant.WEEK_ARRAY_HEIGHT})
+      .padding({top : 115 + this.getUIContext().px2vp(this.topStatusBarHeight)})
       .align(Alignment.Top)
-      .onDidScroll((_x : number,y : number) => {
-        this.yOffset += y;
-      })
     }
     .width(BasicConstant.FULL_WIDTH)
     .height(BasicConstant.FULL_HEIGHT)
-    // .margin({ bottom: this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 700 : 150 })
     .id('adjustSheetDialog')
   }
 }

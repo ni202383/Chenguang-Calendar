@@ -100,6 +100,7 @@ export struct MonthViewDetail{
   private lunarTextColorInWeekend = $r('app.string.gray_deeper_in_weekend');//在本月周末的农历字符串颜色
   private themeColorInOtherMonth: string = 'rgba(234,92,46,0.1)';//给不在本月的主题颜色加上透明度
   private themeColorInWeekend: string = 'rgba(234,92,46,0.4)';//给本月周末的主题颜色加上透明度
+  private weekArray: Array<string> = ['日', '一', '二', '三', '四', '五', '六'];
   @State nearestFestivalDayDiff : number = 0;
   @Consume('currentIndexInMonthView') current_index : number;
   currentIndex: number = 6000;
@@ -255,6 +256,21 @@ export struct MonthViewDetail{
 
   build() {
     Column({space : ViewArkUIConstant.COMPONENT_GAP_SPACE}) {
+      Row() {
+        ForEach(this.weekArray, (item: string, index: number) => {
+          Text(item)
+            .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
+              ViewArkUIConstant.WEEK_ARRAY_FONTSIZE_SM : this.currentBreakpoint == BreakpointConstant.BREAKPOINT_MD
+                ? ViewArkUIConstant.WEEK_ARRAY_FONTSIZE_MD : ViewArkUIConstant.WEEK_ARRAY_FONTSIZE_LG)
+            .fontColor(index == ViewArkUIConstant.WEEK_ARRAY_SUNDAY_INDEX ||
+              index == ViewArkUIConstant.WEEK_ARRAY_SATURDAY_INDEX ? $r('app.color.gray_deep') : Color.Black)
+        }, (item: string) => item)
+      }
+      .width(BasicConstant.FULL_WIDTH)
+      .height(ViewArkUIConstant.WEEK_ARRAY_HEIGHT)
+      .zIndex(10)
+      .backgroundColor($r('app.color.backgroundcolor'))
+      .justifyContent(FlexAlign.SpaceAround)
       Grid() {//本月视图
         ForEach(this.perMonthInfo.getMonthData(), (item: DailyInfo, index: number) => {
           GridItem() {
@@ -262,10 +278,10 @@ export struct MonthViewDetail{
               if (item.getIsSelectedAndAddThemeBackgroundColor()) {//如果是今天的话，就是实心圆
                 Circle()
                   .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ? this.viewSize - 5 :
-                    this.currentBreakpoint == BreakpointConstant.BREAKPOINT_MD ? this.viewSizeHeightMD :
+                    this.currentBreakpoint == BreakpointConstant.BREAKPOINT_MD ? this.viewSizeHeightMD - 10 :
                       this.viewSizeHeightLG)
                   .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ? this.viewSize - 5 :
-                    this.currentBreakpoint == BreakpointConstant.BREAKPOINT_MD ? this.viewSizeHeightMD :
+                    this.currentBreakpoint == BreakpointConstant.BREAKPOINT_MD ? this.viewSizeHeightMD - 10 :
                       this.viewSizeHeightLG)
                   .fill(this.themeColor)
                   .stroke(this.themeColor)
@@ -277,10 +293,10 @@ export struct MonthViewDetail{
                 this.selectedDay == item.getDay()) {
                 Circle()
                   .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ? this.viewSize - 5 :
-                    this.currentBreakpoint == BreakpointConstant.BREAKPOINT_MD ? this.viewSizeHeightMD:
+                    this.currentBreakpoint == BreakpointConstant.BREAKPOINT_MD ? this.viewSizeHeightMD - 10:
                       this.viewSizeHeightLG)
                   .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ? this.viewSize - 5 :
-                    this.currentBreakpoint == BreakpointConstant.BREAKPOINT_MD ? this.viewSizeHeightMD :
+                    this.currentBreakpoint == BreakpointConstant.BREAKPOINT_MD ? this.viewSizeHeightMD - 10 :
                       this.viewSizeHeightLG)
                   .fillOpacity(ViewArkUIConstant.CIRCLE_FILL_OPACITY)
                   .stroke(this.themeColor)
@@ -338,9 +354,9 @@ export struct MonthViewDetail{
             .width(BasicConstant.FULL_WIDTH)
             .height(BasicConstant.FULL_HEIGHT)
           }
-          .width(this.viewSize)
+          .width(this.viewSize - 10)
           .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ? this.viewSize :
-            this.viewSizeHeightMD)
+            this.viewSizeHeightMD - 10)
         }, (item: DailyInfo) => `${item.getYear()}-${item.getMonth()}-${item.getDay()}`)
       }
       .columnsTemplate('1fr 1fr 1fr 1fr 1fr 1fr 1fr')
@@ -365,22 +381,22 @@ export struct MonthViewDetail{
         .width('50%')
         .alignItems(VerticalAlign.Bottom)
 
-        Row(){
-          Text('我的倒计时')
-            .fontSize(14)
-
-          Image($r('app.media.right_arrow'))
-            .height(18)
-        }
-        .width('30%')
-        .height(BasicConstant.FULL_HEIGHT)
-        .justifyContent(FlexAlign.SpaceEvenly)
-        .alignItems(VerticalAlign.Bottom)
-        .onClick((event : ClickEvent) => {
-          this.getUIContext().getRouter().pushUrl({
-            url : 'pages/CountdownList'
-          })
-        })
+        // Row(){
+        //   Text('我的倒计时')
+        //     .fontSize(14)
+        //
+        //   Image($r('app.media.right_arrow'))
+        //     .height(18)
+        // }
+        // .width('30%')
+        // .height(BasicConstant.FULL_HEIGHT)
+        // .justifyContent(FlexAlign.SpaceEvenly)
+        // .alignItems(VerticalAlign.Bottom)
+        // .onClick((event : ClickEvent) => {
+        //   this.getUIContext().getRouter().pushUrl({
+        //     url : 'pages/CountdownList'
+        //   })
+        // })
       }
       .width(BasicConstant.FULL_WIDTH)
       .height(30)

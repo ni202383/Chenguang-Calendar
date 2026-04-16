@@ -98,6 +98,7 @@ struct DayViewDetail{
   @StorageProp('isExportCourseSchedule') isExportCourseSchedule : boolean = false;
   @StorageProp('isExportExamSchedule') isExportExamSchedule : boolean = false;
   @StorageProp('themeColor') themeColor : string = '';
+  @StorageProp('topStatusBarHeight') topStatusBarHeight : number = 0;//顶部状态栏高度
 
   aboutToAppear(): void {
     this.currentYear = this.perDayInfo.getYear();
@@ -228,24 +229,16 @@ struct DayViewDetail{
         // .justifyContent(FlexAlign.Center)
 
         Row({space : 20}){
-          Scroll(){
-            TaskListGrid({
+          TaskListGrid({
               year : this.currentYear,
               month : this.currentMonth,
               day : this.currentDay,
               isWeeklyTaskTableMode : false,
               isDailyTaskTableMode : true,
               totalTableWidth : 150
-            })
-          }
+          })
           .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? '18.5%' : '30%')
-          .height(BasicConstant.FULL_HEIGHT)
-          .scrollable(ScrollDirection.Vertical)
-          .scrollBar(BarState.Off)
-          .edgeEffect(EdgeEffect.Spring)
-          .align(Alignment.Top)
-          .margin({bottom : 50})
-
+          // .margin({bottom : 50})
 
           Scroll(){
             Column(){
@@ -258,16 +251,15 @@ struct DayViewDetail{
               })
             }
           }
-          .height(BasicConstant.FULL_HEIGHT)
+          .height('130%')
           .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? '78%' : '67%')
           .scrollable(ScrollDirection.Vertical)
           .scrollBar(BarState.Auto)
           .edgeEffect(EdgeEffect.Spring)
           .align(Alignment.Top)
-
         }
         .width(BasicConstant.FULL_WIDTH)
-        .height(BasicConstant.FULL_HEIGHT)
+        .alignItems(VerticalAlign.Top)
       }
       .width(BasicConstant.FULL_WIDTH)
       .alignItems(HorizontalAlign.Center)
@@ -275,7 +267,11 @@ struct DayViewDetail{
     .width(BasicConstant.FULL_WIDTH)
     .height(BasicConstant.FULL_HEIGHT)
     .scrollable(ScrollDirection.Vertical)
+    .scrollBar(BarState.Off)
     .edgeEffect(EdgeEffect.Spring)
+    .padding({
+      top : 115 + this.getUIContext().px2vp(this.topStatusBarHeight)
+    })
 
   }
 }

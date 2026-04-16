@@ -239,7 +239,7 @@ export class CourseStore {
     const monday = this.getMonday(date);
     const termStartMonday = new Date(this.termStartDate);
     const diff = monday.getTime() - termStartMonday.getTime();
-    return Math.floor(diff / (7 * 24 * 60 * 60 * 1000)) + 2;
+    return Math.floor(diff / (7 * 24 * 60 * 60 * 1000)) + 1;
   }
 
   private resolveDayOfWeek(date: Date): number {

@@ -1,154 +1,193 @@
-import { EventCountDown, EventCountDownPlain } from "./EventCountDown";
-import { common } from "@kit.AbilityKit";
+import { EventCountDown, EventCountDownPlain } from './EventCountDown';
+import { common } from '@kit.AbilityKit';
 import dataPreferences from '@ohos.data.preferences';
 
 export class CountDownStore {
-  private countDownList: Array<EventCountDown> = [];
   private static readonly PREF_NAME: string = 'countdown_store';
   private static readonly KEY_DATA: string = 'countdown_json';
+  private static readonly LOG_PREFIX: string = '[CHENGGUANG_COUNTDOWN_STORE]';
 
+  private countDownList: Array<EventCountDown> = [];
   private context?: common.UIAbilityContext;
   private pref?: dataPreferences.Preferences;
 
-  /**
-   * 必须在应用启动时调用一次
-   * 例如在 EntryAbility.onCreate 里：
-   *   await countDownStore.init(this.context);
-   */
-  public async init(context: common.UIAbilityContext) {
+  public async init(context: common.UIAbilityContext): Promise<void> {
     this.context = context;
     this.pref = await dataPreferences.getPreferences(context, CountDownStore.PREF_NAME);
     await this.loadFromDisk();
   }
 
-  private async loadFromDisk() {
-    if (!this.pref) return;
+  private async loadFromDisk(): Promise<void> {
+    if (this.pref === undefined) {
+      return;
+    }
+    const json: string = await this.pref.get(CountDownStore.KEY_DATA, '') as string;
+    this.rebuildFromJsonText(json);
+  }
 
-    const json = await this.pref.get(CountDownStore.KEY_DATA, '') as string;
-    if (!json || json.trim().length === 0) return;
-
+  private ensureSyncPreferences(): boolean {
+    if (this.pref !== undefined) {
+      return true;
+    }
+    if (this.context === undefined) {
+      console.error(CountDownStore.LOG_PREFIX + ' context 未初始化，请先在 EntryAbility 中调用 countDownStore.init(this.context)');
+      return false;
+    }
     try {
-      const arr = JSON.parse(json) as EventCountDownPlain[];
-      this.countDownList = (arr ?? []).map(p => EventCountDown.fromPlainObject(p));
+      this.pref = dataPreferences.getPreferencesSync(this.context, { name: CountDownStore.PREF_NAME });
+      return true;
+    } catch (error) {
+      const err: Error = error as Error;
+      console.error(CountDownStore.LOG_PREFIX + ' getPreferencesSync 失败: ' + err.message);
+      return false;
+    }
+  }
+
+  private rebuildFromJsonText(json: string): void {
+    if (json.trim().length === 0) {
+      this.countDownList = [];
+      console.info(CountDownStore.LOG_PREFIX + ' load empty');
+      return;
+    }
+    try {
+      const plainArray: Array<EventCountDownPlain> = JSON.parse(json) as Array<EventCountDownPlain>;
+      const nextList: Array<EventCountDown> = [];
+      for (let index: number = 0; index < plainArray.length; index++) {
+        nextList.push(EventCountDown.fromPlainObject(plainArray[index]));
+      }
+      this.countDownList = nextList;
       this.sortInMemory();
-      console.info('[CountDownStore] loadFromDisk success');
-    } catch (e) {
-      console.error('[CountDownStore] loadFromDisk JSON 解析失败: ' + (e as Error).message);
+      console.info(CountDownStore.LOG_PREFIX + ' load success');
+    } catch (error) {
+      const err: Error = error as Error;
+      console.error(CountDownStore.LOG_PREFIX + ' load 失败: ' + err.message);
       this.countDownList = [];
     }
   }
 
-  private async saveToDisk() {
+  private saveToDiskSync(): boolean {
+    if (!this.ensureSyncPreferences()) {
+      return false;
+    }
     try {
-      if (!this.pref) {
-        if (!this.context) return;
-        this.pref = await dataPreferences.getPreferences(this.context, CountDownStore.PREF_NAME);
+      const plainArray: Array<EventCountDownPlain> = [];
+      for (let index: number = 0; index < this.countDownList.length; index++) {
+        plainArray.push(this.countDownList[index].toPlainObject());
       }
-      const plainArr = this.countDownList.map(cd => cd.toPlainObject());
-      const json = JSON.stringify(plainArr);
-      await this.pref!.put(CountDownStore.KEY_DATA, json);
-      await this.pref!.flush();
-      console.info('[CountDownStore] saveToDisk success');
-    } catch (e) {
-      console.error('[CountDownStore] saveToDisk 失败: ' + (e as Error).message);
+      const json: string = JSON.stringify(plainArray);
+      this.pref!.putSync(CountDownStore.KEY_DATA, json);
+      this.pref!.flushSync();
+      console.info(CountDownStore.LOG_PREFIX + ' save success');
+      return true;
+    } catch (error) {
+      const err: Error = error as Error;
+      console.error(CountDownStore.LOG_PREFIX + ' save 失败: ' + err.message);
+      return false;
     }
   }
 
   public async addCountDownAndFlush(cd: EventCountDown): Promise<string> {
-    if (!cd.getId() || cd.getId().trim().length === 0) {
-      cd.setId(new Date().getTime().toString());
-      cd.setCreatedAtTime(new Date());
+    this.getAll();
+    if (cd.getId().trim().length === 0) {
+      const now: Date = new Date();
+      cd.setId(now.getTime().toString());
+      cd.setCreatedAtTime(now);
     }
     this.countDownList.push(cd);
     this.sortInMemory();
-    await this.saveToDisk();     // ✅关键：等待写盘完成
+    const saveSuccess: boolean = this.saveToDiskSync();
+    if (!saveSuccess) {
+      console.error(CountDownStore.LOG_PREFIX + ' addCountDownAndFlush 写盘失败 id=' + cd.getId());
+      return '';
+    }
     return cd.getId();
   }
 
-
-  // 像 TaskStore.getTask 那样：每次读取都同步从磁盘恢复一次，确保刷新可靠
   public getAll(): Array<EventCountDown> {
-    if (!this.pref) {
-      if (!this.context) {
-        console.error('[CountDownStore] context 未初始化，请先在 EntryAbility 中调用 countDownStore.init(this.context)');
-        return [];
-      }
-      try {
-        this.pref = dataPreferences.getPreferencesSync(this.context, { name: CountDownStore.PREF_NAME });
-      } catch (e) {
-        console.error('[CountDownStore] getPreferencesSync 失败: ' + (e as Error).message);
-        return [];
-      }
+    if (!this.ensureSyncPreferences()) {
+      return [];
     }
-
     try {
-      const json = this.pref.getSync(CountDownStore.KEY_DATA, '') as string;
-      if (!json || json.trim().length === 0) {
-        this.countDownList = [];
-        return [];
-      }
-      const arr = JSON.parse(json) as EventCountDownPlain[];
-      this.countDownList = (arr ?? []).map(p => EventCountDown.fromPlainObject(p));
-      this.sortInMemory();
+      const json: string = this.pref!.getSync(CountDownStore.KEY_DATA, '') as string;
+      this.rebuildFromJsonText(json);
       return this.countDownList;
-    } catch (e) {
-      console.error('[CountDownStore] getAll 从磁盘读取失败: ' + (e as Error).message);
+    } catch (error) {
+      const err: Error = error as Error;
+      console.error(CountDownStore.LOG_PREFIX + ' getAll 从磁盘读取失败: ' + err.message);
       return [];
     }
   }
 
   public addCountDown(cd: EventCountDown): boolean {
-    if (!cd.getId() || cd.getId().trim().length === 0) {
-      cd.setId(new Date().getTime().toString());
-      cd.setCreatedAtTime(new Date());
+    this.getAll();
+    if (cd.getId().trim().length === 0) {
+      const now: Date = new Date();
+      cd.setId(now.getTime().toString());
+      cd.setCreatedAtTime(now);
     }
     this.countDownList.push(cd);
     this.sortInMemory();
-    this.saveToDisk();
-    return true;
+    return this.saveToDiskSync();
   }
 
   public updateCountDown(cd: EventCountDown): boolean {
-    const id = cd.getId();
-    if (!id) return false;
-
-    for (let i = 0; i < this.countDownList.length; i++) {
-      if (this.countDownList[i].getId() === id) {
-        this.countDownList[i] = cd;
+    this.getAll();
+    const id: string = cd.getId();
+    if (id.trim().length === 0) {
+      return false;
+    }
+    for (let index: number = 0; index < this.countDownList.length; index++) {
+      if (this.countDownList[index].getId() === id) {
+        this.countDownList[index] = cd;
         this.sortInMemory();
-        this.saveToDisk();
-        return true;
+        return this.saveToDiskSync();
       }
     }
+    console.warn(CountDownStore.LOG_PREFIX + ' update miss id=' + id);
     return false;
   }
 
   public deleteCountDownById(id: string): boolean {
-    const before = this.countDownList.length;
-    this.countDownList = this.countDownList.filter(x => x.getId() !== id);
-    if (this.countDownList.length === before) return false;
-
-    this.saveToDisk();
-    return true;
+    this.getAll();
+    let found: boolean = false;
+    const nextList: Array<EventCountDown> = [];
+    for (let index: number = 0; index < this.countDownList.length; index++) {
+      const item: EventCountDown = this.countDownList[index];
+      if (item.getId() === id) {
+        found = true;
+        continue;
+      }
+      nextList.push(item);
+    }
+    if (!found) {
+      console.warn(CountDownStore.LOG_PREFIX + ' delete miss id=' + id);
+      return false;
+    }
+    this.countDownList = nextList;
+    return this.saveToDiskSync();
   }
 
   public getById(id: string): EventCountDown | null {
-    const list = this.getAll();
-    for (let i = 0; i < list.length; i++) {
-      if (list[i].getId() === id) return list[i];
+    const list: Array<EventCountDown> = this.getAll();
+    for (let index: number = 0; index < list.length; index++) {
+      if (list[index].getId() === id) {
+        return list[index];
+      }
     }
     return null;
   }
 
-
-  private sortInMemory() {
-    // 置顶优先，其次按目标时间升序，再按创建时间降序
-    this.countDownList.sort((a, b) => {
-      if (a.isImportant !== b.isImportant) return a.isImportant ? -1 : 1;
-      const ta = a.targetDate.getTime();
-      const tb = b.targetDate.getTime();
-      if (ta !== tb) return ta - tb;
-      return b.getCreatedAtTime().getTime() - a.getCreatedAtTime().getTime();
+  private sortInMemory(): void {
+    this.countDownList.sort((first: EventCountDown, second: EventCountDown) => {
+      if (first.isImportant !== second.isImportant) {
+        return first.isImportant ? -1 : 1;
+      }
+      const firstTargetTime: number = first.targetDate.getTime();
+      const secondTargetTime: number = second.targetDate.getTime();
+      if (firstTargetTime !== secondTargetTime) {
+        return firstTargetTime - secondTargetTime;
+      }
+      return second.getCreatedAtTime().getTime() - first.getCreatedAtTime().getTime();
     });
   }
 }

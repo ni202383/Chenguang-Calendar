@@ -2,10 +2,10 @@ export class ButtonModifier implements AttributeModifier<ButtonAttribute> {
   private width : number;
   private height : number;
   private backgroundColor : Resource | string;
-  constructor(width : number,height : number,backgroundColor : Resource | string) {
+  constructor(width : number,height : number) {
     this.width = width;
     this.height = height;
-    this.backgroundColor = backgroundColor;
+    this.backgroundColor = '#ffcbcbcb';
   }
 
   applyNormalAttribute(instance: ButtonAttribute): void {

@@ -23,6 +23,7 @@ export struct YearView {
   @StorageLink('changeTabsIndex') changeTabsIndex : boolean = false;//信号量
   @Link currentYearInMonthView : number;
   @Link currentMonthInMonthView : number;
+  @StorageProp('topStatusBarHeight') topStatusBarHeight : number = 0;//顶部状态栏高度
 
   aboutToAppear(): void {
     this.preIndex = this.currentIndex;
@@ -195,9 +196,10 @@ export struct YearView {
       .scrollBar(BarState.Off)
       .align(Alignment.Top)
       .edgeEffect(EdgeEffect.Spring)
-
+      .padding({top : 120})
     }
     .width(BasicConstant.FULL_WIDTH)
     .height(BasicConstant.FULL_HEIGHT)
+    .padding({top : this.getUIContext().px2vp(this.topStatusBarHeight)})
   }
 }

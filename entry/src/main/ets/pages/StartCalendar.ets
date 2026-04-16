@@ -7,7 +7,7 @@ import display from '@ohos.display';
 import { DialogHub, InfSheet } from '@hadss/dialoghub'
 import { DailySchedule } from './View/DailyTask/NewDailyScheduleView';
 import { Task } from './Model/DailyTask';
-import { AlertDialog, router } from '@kit.ArkUI'
+import { AlertDialog, LengthUnit, router } from '@kit.ArkUI'
 import { WeekDataSource } from './ViewModel/DataSource/WeekDataSource';
 import { WeekView } from './View/WeekView';
 import { DayDataSource } from './ViewModel/DataSource/DayDataSource';
@@ -20,6 +20,11 @@ import { motion } from '@kit.MultimodalAwarenessKit'
 import { BusinessError } from '@kit.BasicServicesKit'
 import { FestivalInfo } from './View/FestivalInfo'
 import { SolarTermsInfo } from './View/SolarTermsInfo';
+import { AgentTimeHelper } from './Service/AgentTimeHelper';
+import {hdsMaterial,HdsTabs,HdsTabsController,HdsNavigation, ScrollEffectType,
+  HdsNavigationMenuContentOptions,
+  HdsNavigationTitleMode,
+  HdsNavigationMenuItemOptions} from '@kit.UIDesignKit'
 
 @Builder
 export function dailySchedule() {
@@ -38,7 +43,7 @@ export struct StartCalendar {
   @State @Watch('updateTaskList') @Watch('updateTabsIndex') currentIndex: number = 1;//tabs组件的编号
   @StorageLink('reloadTask') reloadTask: boolean = false;//重新加载每日日程的信号量
   private mediaQuery = new MediaQuery();//一多开发媒体查询工具类对象
-  private tabsController = new TabsController();
+  private hdsTabsController : HdsTabsController = new HdsTabsController();
   @StorageLink(BreakpointConstant.CURRENT_BREAKPOINT) currentBreakpoint: string = BreakpointConstant.BREAKPOINT_SM;
   @StorageLink('themeColor') themeColor: string = '#EA5C2E';
   /*
@@ -69,15 +74,15 @@ export struct StartCalendar {
   /*
   * 各个视图中的来自Swiper中的index
    */
-  @State currentIndexInYearView: number = this.yearDataSource.getInitialIndex();
-  @State currentIndexInWeekView: number = this.weekDataSource.getInitialIndex();
+  @State @Watch('isShowTodayButton') currentIndexInYearView: number = this.yearDataSource.getInitialIndex();
+  @State @Watch('isShowTodayButton') currentIndexInWeekView: number = this.weekDataSource.getInitialIndex();
   @Provide selectedDayInWeekView: number = this.currentYearInWeekView == new Date().getFullYear() &&
     this.currentMonthInWeekView == new Date().getMonth() + 1 ? new Date().getDate() :
     this.weekDataSource.getData(this.currentIndexInWeekView)
       .getWeekData()[new Date().getDay()]
       .getDay()
-  @Provide('currentIndexInMonthView') currentIndexInMonthView: number = this.monthDataSource.getInitialIndex();
-  @State currentIndexInDayView: number = this.dayDataSource.getInitialIndex();
+  @Provide('currentIndexInMonthView') @Watch('isShowTodayButton') currentIndexInMonthView: number = this.monthDataSource.getInitialIndex();
+  @State @Watch('isShowTodayButton') currentIndexInDayView: number = this.dayDataSource.getInitialIndex();
   adjustSheetDialog ?: InfSheet;//新建日程弹窗
   @StorageLink('selectedRemindTimeNumber') selectedRemindTimeNumber: number = 0;//新建日程中选择的提醒数目
   @State ensureCloseNewTaskDialog: boolean = false; //新建日程想关闭时使用
@@ -121,6 +126,122 @@ export struct StartCalendar {
   @StorageProp('screenWidth') screenWidth : number = 200;
   @StorageLink('isShowSolarTermsDetail') isShowSolarTermsDetail : boolean = false;
   @StorageLink('returnEnsureSave') returnEnsureSave : boolean = false;
+  @StorageLink('agentCalendarJumpVersion') @Watch('handleAgentCalendarJump') agentCalendarJumpVersion: number = 0;
+  @StorageProp('agentCalendarJumpDate') agentCalendarJumpDate: string = '';
+  @StorageProp('agentCalendarJumpViewType') agentCalendarJumpViewType: string = 'day';
+  private readonly dayBaseDate: Date = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+  private readonly weekBaseDate: Date = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+  private readonly monthBaseDate: Date = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  private currentMenuValueArray : Array<HdsNavigationMenuItemOptions> = [{
+    content : {
+      label : 'add',
+      icon : $r('app.media.plus'),
+      action : () => {
+        this.isChange = false;
+        this.adjustSheetDialog?.show();
+      }
+    }
+  },{
+    content : {
+      label : 'setting',
+      icon : $r('app.media.setting'),
+      action : () => {
+        this.getUIContext().getRouter().pushUrl({
+          url : 'pages/Settings'
+        },() => {
+          console.error('无法跳转到设置页');
+        })
+      }
+    },
+  }]
+  private otherMenuValueArray : Array<HdsNavigationMenuItemOptions> = [
+    {
+      content : {
+        label : 'current',
+        icon : $r('app.media.today'),
+        action : () => {
+          if (this.currentIndex == StartArkUISizeConstant.TABS_INDEX_MONTH) {
+            this.currentIndexInMonthView = this.monthDataSource.getInitialIndex();
+            this.currentYearInMonthView = new Date().getFullYear();
+            this.currentMonthInMonthView = new Date().getMonth() + 1;
+            this.selectedDayInMonthView = new Date().getDate();
+          } else if (this.currentIndex == StartArkUISizeConstant.TABS_INDEX_WEEK) {
+            this.currentIndexInWeekView = this.weekDataSource.getInitialIndex();
+            this.currentYearInWeekView = new Date().getFullYear();
+            this.currentMonthInWeekView = new Date().getMonth() + 1;
+            this.selectedDayInWeekView = new Date().getDate();
+          } else if (this.currentIndex == StartArkUISizeConstant.TABS_INDEX_DAY) {
+            this.currentIndexInDayView = this.dayDataSource.getInitialIndex();
+            this.currentYearInDayView = new Date().getFullYear();
+            this.currentMonthInDayView = new Date().getMonth() + 1;
+            this.currentDayInDayView = new Date().getDate();
+          } else if (this.currentIndex == StartArkUISizeConstant.TABS_INDEX_YEAR) {
+            this.currentIndexInYearView = this.yearDataSource.getInitialIndex();
+            this.currentYearInYearView = new Date().getFullYear();
+          }
+        }
+      }
+    },{
+    content : {
+      label : 'add',
+      icon : $r('app.media.plus'),
+      action : () => {
+        this.isChange = false;
+        this.adjustSheetDialog?.show();
+      }
+    }
+  },{
+    content : {
+      label : 'setting',
+      icon : $r('app.media.setting'),
+      action : () => {
+        this.getUIContext().getRouter().pushUrl({
+          url : 'pages/Settings'
+        },() => {
+          console.error('无法跳转到设置页');
+        })
+      }
+    },
+  }
+  ]
+
+  @State menuValueArray : Array<HdsNavigationMenuItemOptions> = [];
+
+  handleAgentCalendarJump(): void {
+    const targetDate: Date | null = AgentTimeHelper.parseDateText(this.agentCalendarJumpDate);
+    if (targetDate === null) {
+      return;
+    }
+    if (this.agentCalendarJumpViewType === 'month') {
+      this.currentIndex = StartArkUISizeConstant.TABS_INDEX_MONTH;
+      this.currentYearInMonthView = targetDate.getFullYear();
+      this.currentMonthInMonthView = targetDate.getMonth() + 1;
+      this.selectedDayInMonthView = targetDate.getDate();
+      this.selectedDateInMonthView = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+      this.currentIndexInMonthView = this.monthDataSource.getInitialIndex() +
+        AgentTimeHelper.monthOffset(this.monthBaseDate, targetDate);
+      AppStorage.setOrCreate('wholeIndex', this.currentIndex);
+      return;
+    }
+    if (this.agentCalendarJumpViewType === 'week') {
+      this.currentIndex = StartArkUISizeConstant.TABS_INDEX_WEEK;
+      this.currentYearInWeekView = targetDate.getFullYear();
+      this.currentMonthInWeekView = targetDate.getMonth() + 1;
+      this.selectedDayInWeekView = targetDate.getDate();
+      this.currentIndexInWeekView = this.weekDataSource.getInitialIndex() +
+        Math.floor(AgentTimeHelper.daysBetween(AgentTimeHelper.mondayOf(this.weekBaseDate),
+          AgentTimeHelper.mondayOf(targetDate)) / 7);
+      AppStorage.setOrCreate('wholeIndex', this.currentIndex);
+      return;
+    }
+    this.currentIndex = StartArkUISizeConstant.TABS_INDEX_DAY;
+    this.currentYearInDayView = targetDate.getFullYear();
+    this.currentMonthInDayView = targetDate.getMonth() + 1;
+    this.currentDayInDayView = targetDate.getDate();
+    this.currentIndexInDayView = this.dayDataSource.getInitialIndex() + AgentTimeHelper.daysBetween(this.dayBaseDate,
+      targetDate);
+    AppStorage.setOrCreate('wholeIndex', this.currentIndex);
+  }
 
   updateBottomNewTaskButtonHandingStatus(){
     try {
@@ -138,7 +259,7 @@ export struct StartCalendar {
   }
 
   updateTabsIndex(){
-    this.tabsController.changeIndex(this.currentIndex);
+    this.hdsTabsController.changeIndex(this.currentIndex);
   }
 
   updateTaskList() {
@@ -177,6 +298,7 @@ export struct StartCalendar {
 
   aboutToAppear() {
     this.mediaQuery.Register();
+    this.menuValueArray = this.currentMenuValueArray;
     DialogHub.init(this.getUIContext())
     try {
       let defaultDisplay = display.getDefaultDisplaySync();
@@ -300,253 +422,142 @@ export struct StartCalendar {
   tabsBuilder(text: string, index: number) {//tabsBar组件内容
     Column() {
       Text(text)
-        .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 20 : 15)
+        .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 22 : 18)
         .fontColor(this.currentIndex == index ? this.themeColor : Color.Black)
     }
-    .width(BasicConstant.FULL_WIDTH)
     .height(36)
-    .borderRadius(20)
-    .backgroundColor(Color.Transparent)
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
-    .animation({
-      duration : 500
-    })
-    .hitTestBehavior(HitTestMode.None)
+  }
+
+  mainTitle() : string{
+    if (this.currentIndex == StartArkUISizeConstant.TABS_INDEX_MONTH) {
+      return this.currentYearInMonthView == new Date().getFullYear() ? `${this.currentMonthInMonthView
+      }月` : `${this.currentYearInMonthView}年${this.currentMonthInMonthView}月`
+    } else if (this.currentIndex == StartArkUISizeConstant.TABS_INDEX_WEEK) {
+      return this.currentYearInWeekView == new Date().getFullYear() ? `${this.currentMonthInWeekView
+      }月` : `${this.currentYearInWeekView}年${this.currentMonthInWeekView}月`
+    } else if (this.currentIndex == StartArkUISizeConstant.TABS_INDEX_DAY) {
+      return this.currentYearInDayView == new Date().getFullYear() ? `${this.currentMonthInDayView
+      }月${this.currentDayInDayView}日` : `${this.currentYearInDayView}年${this.currentMonthInDayView
+      }月${this.currentDayInDayView}日`
+    } else {
+      return `${this.currentYearInYearView}年`
+    }
+  }
+
+  isShowTodayButton(){
+    if (this.currentIndex == StartArkUISizeConstant.TABS_INDEX_MONTH &&
+      (this.currentIndexInMonthView != this.monthDataSource.getInitialIndex()) ||
+      this.currentIndex == StartArkUISizeConstant.TABS_INDEX_WEEK &&
+        (this.currentIndexInWeekView != this.weekDataSource.getInitialIndex()) ||
+      this.currentIndex == StartArkUISizeConstant.TABS_INDEX_DAY &&
+        (this.currentIndexInDayView != this.dayDataSource.getInitialIndex()) ||
+      this.currentIndex == StartArkUISizeConstant.TABS_INDEX_YEAR &&
+        (this.currentIndexInYearView != this.yearDataSource.getInitialIndex())
+    ){
+      this.menuValueArray = this.currentMenuValueArray;
+    } else {
+      this.menuValueArray = this.otherMenuValueArray;
+    }
+  }
+
+  private menu : HdsNavigationMenuContentOptions = {
+    value : this.otherMenuValueArray
   }
 
   build() {
     RelativeContainer() {
-      Column() {
-      } //tabs移动灰色背景
-      .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? BasicConstant.HALF_WIDTH :
-        BasicConstant.FULL_WIDTH)
-      .height(StartArkUISizeConstant.TABS_GRAY_BACKGROUND_HEIGHT)
-      .backgroundColor($r('app.color.background_gray'))
-      .borderRadius(StartArkUISizeConstant.TABS_GRAY_BACKGROUND_BORDER_RADIUS)
-      .alignRules({
-        top: { anchor: '__container__', align: VerticalAlign.Top },
-        middle: { anchor: '__container__', align: HorizontalAlign.Center }
-      })
-      .offset({ y: this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ?
-        StartArkUISizeConstant.TABS_GRAY_BACKGROUND_Y_OFFSET_LG : StartArkUISizeConstant.TABS_GRAY_BACKGROUND_Y_OFFSET_OTHER})
-
-      Column() {
-      } //tabs移动白色块
-      .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? BasicConstant.ONE_EIGHTH
-        : BasicConstant.ONE_QUARTER)
-      .height(StartArkUISizeConstant.TABS_MOVING_WHITE_BLOCK_HEIGHT)
-      .borderRadius(StartArkUISizeConstant.TABS_MOVING_WHITE_BLOCK_BORDER_RADIUS)
-      .backgroundColor(Color.White)
-      .shadow({
-        radius : 20,
-        color : 'rgba(0,0,0,0.2)',
-        type : ShadowType.COLOR,
-        offsetX : 0,
-        offsetY : 0
-      })
-      .alignRules({
-        top: { anchor: '__container__', align: VerticalAlign.Top },
-        left: { anchor: '__container__', align: HorizontalAlign.Start }
-      })
-      .offset({
-        x: this.offsetLeftBorder(this.currentIndex),
-        y: this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ?
-          StartArkUISizeConstant.TABS_MOVING_WHITE_BLOCK_Y_OFFSET_LG :
-          StartArkUISizeConstant.TABS_MOVING_WHITE_BLOCK_Y_OFFSET_OTHER
-      })
-      .animation({
-        duration: BasicConstant.ANIMATION_DURATION_LONG,
-        tempo: BasicConstant.ANIMATION_SPEED_FASTER,
-        curve: Curve.Linear,
-        playMode: PlayMode.Normal
-      })
-      .onClick(() => {
-        console.log('已点击白色块')
-      })
-      .clickEffect({
-        level : ClickEffectLevel.LIGHT,
-        scale : 0.9
-      })
-
-      Column() {
-        Row() {//顶部年月日的显示以及三个按钮：今，加号和设置
-          if (this.currentIndex == StartArkUISizeConstant.TABS_INDEX_MONTH) {
-            Text(this.currentYearInMonthView == new Date().getFullYear() ? `${this.currentMonthInMonthView
-            }月` : `${this.currentYearInMonthView}年${this.currentMonthInMonthView}月`)
-              .topDateText(this.currentBreakpoint,StartArkUISizeConstant.TOP_DATE_FONT_SIZE_SM,
-                StartArkUISizeConstant.TOP_DATE_FONT_SIZE_MD,StartArkUISizeConstant.TOP_DATE_FONT_SIZE_LG)
-          } else if (this.currentIndex == StartArkUISizeConstant.TABS_INDEX_WEEK) {
-            Text(this.currentYearInWeekView == new Date().getFullYear() ? `${this.currentMonthInWeekView
-            }月` : `${this.currentYearInWeekView}年${this.currentMonthInWeekView}月`)
-              .topDateText(this.currentBreakpoint,StartArkUISizeConstant.TOP_DATE_FONT_SIZE_SM,
-                StartArkUISizeConstant.TOP_DATE_FONT_SIZE_MD,StartArkUISizeConstant.TOP_DATE_FONT_SIZE_LG)
-          } else if (this.currentIndex == StartArkUISizeConstant.TABS_INDEX_DAY) {
-            Text(this.currentYearInDayView == new Date().getFullYear() ? `${this.currentMonthInDayView
-            }月${this.currentDayInDayView}日` : `${this.currentYearInDayView}年${this.currentMonthInDayView
-            }月${this.currentDayInDayView}日`)
-              .topDateText(this.currentBreakpoint,StartArkUISizeConstant.TOP_DATE_FONT_SIZE_SM,
-                StartArkUISizeConstant.TOP_DATE_FONT_SIZE_MD,StartArkUISizeConstant.TOP_DATE_FONT_SIZE_LG)
-          } else {
-            Text(`${this.currentYearInYearView}年`)
-              .topDateText(this.currentBreakpoint,StartArkUISizeConstant.TOP_DATE_FONT_SIZE_SM,
-                StartArkUISizeConstant.TOP_DATE_FONT_SIZE_MD,StartArkUISizeConstant.TOP_DATE_FONT_SIZE_LG)
-          }
-
-          Row({space : StartArkUISizeConstant.THREE_BUTTON_GAP_SPACE}) {
-            Column() {
-              if (this.currentIndex == StartArkUISizeConstant.TABS_INDEX_MONTH &&
-                (this.currentIndexInMonthView != this.monthDataSource.getInitialIndex()) ||
-                this.currentIndex == StartArkUISizeConstant.TABS_INDEX_WEEK &&
-                  (this.currentIndexInWeekView != this.weekDataSource.getInitialIndex()) ||
-                this.currentIndex == StartArkUISizeConstant.TABS_INDEX_DAY &&
-                  (this.currentIndexInDayView != this.dayDataSource.getInitialIndex()) ||
-                this.currentIndex == StartArkUISizeConstant.TABS_INDEX_YEAR &&
-                  (this.currentIndexInYearView != this.yearDataSource.getInitialIndex())
-              ) {
-                Button('今')
-                  .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-                    StartArkUISizeConstant.BUTTON_TODAY_FONTSIZE_SM : StartArkUISizeConstant.BUTTON_TODAY_FONTSIZE_OTHER)
-                  .fontColor(this.themeColor)
-                  .type(ButtonType.Circle)
-                  .backgroundColor($r('app.color.background_gray'))
-                  .width(BasicConstant.NINETY_FIVE_PERCENT)
-                  .height(BasicConstant.NINETY_FIVE_PERCENT)
-                  .onClick((event: ClickEvent) => {
-                      if (this.currentIndex == StartArkUISizeConstant.TABS_INDEX_MONTH) {
-                        this.currentIndexInMonthView = this.monthDataSource.getInitialIndex();
-                        this.currentYearInMonthView = new Date().getFullYear();
-                        this.currentMonthInMonthView = new Date().getMonth() + 1;
-                        this.selectedDayInMonthView = new Date().getDate();
-                      } else if (this.currentIndex == StartArkUISizeConstant.TABS_INDEX_WEEK) {
-                        this.currentIndexInWeekView = this.weekDataSource.getInitialIndex();
-                        this.currentYearInWeekView = new Date().getFullYear();
-                        this.currentMonthInWeekView = new Date().getMonth() + 1;
-                        this.selectedDayInWeekView = new Date().getDate();
-                      } else if (this.currentIndex == StartArkUISizeConstant.TABS_INDEX_DAY) {
-                        this.currentIndexInDayView = this.dayDataSource.getInitialIndex();
-                        this.currentYearInDayView = new Date().getFullYear();
-                        this.currentMonthInDayView = new Date().getMonth() + 1;
-                        this.currentDayInDayView = new Date().getDate();
-                      } else if (this.currentIndex == StartArkUISizeConstant.TABS_INDEX_YEAR) {
-                        this.currentIndexInYearView = this.yearDataSource.getInitialIndex();
-                        this.currentYearInYearView = new Date().getFullYear();
-                      }
-                  })
-              }
-            }
-            .width(BasicConstant.THIRTY_PERCENT)
-            .height(BasicConstant.FULL_HEIGHT)
-            .justifyContent(FlexAlign.Center)
-            .alignItems(HorizontalAlign.Center)
-
-            Column() {
-              Button(){
-                Image($r('app.media.plus'))
-                  .width(StartArkUISizeConstant.PLUS_IMAGE_WIDTH)
-              }
-                .type(ButtonType.Circle)
-                .backgroundColor($r('app.color.background_gray'))
-                .width(BasicConstant.NINETY_FIVE_PERCENT)
-                .height(BasicConstant.NINETY_FIVE_PERCENT)
-                .onClick((event: ClickEvent) => {
-                  this.isChange = false;
-                  this.adjustSheetDialog?.show(); //点击从下往上弹出新建任务窗口
-                })
-            }
-            .width(BasicConstant.THIRTY_PERCENT)
-            .height(BasicConstant.FULL_HEIGHT)
-            .justifyContent(FlexAlign.Center)
-            .alignItems(HorizontalAlign.Center)
-
-            Column() {
-              Button(){
-                Image($r('app.media.setting'))
-                  .width(StartArkUISizeConstant.SETTING_IMAGE_WIDTH)
-              }
-                .type(ButtonType.Circle)
-                .backgroundColor($r('app.color.background_gray'))
-                .width(BasicConstant.NINETY_FIVE_PERCENT)
-                .height(BasicConstant.NINETY_FIVE_PERCENT)
-                .onClick((event: ClickEvent) => {
-                  this.getUIContext().getRouter().pushUrl({
-                    url : 'pages/Settings'
-                  },router.RouterMode.Standard,(err) => {
-                    if(err){
-                      console.log('跳转设置失败');
-                    }
-                  })
-                })
-            }
-            .width(BasicConstant.THIRTY_PERCENT)
-            .height(BasicConstant.FULL_HEIGHT)
-            .justifyContent(FlexAlign.Center)
-            .alignItems(HorizontalAlign.Center)
-
-          }
-          .height(BasicConstant.FULL_HEIGHT)
-          .width(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
-            StartArkUISizeConstant.THREE_START_BUTTON_ROW_WIDTH_SM : StartArkUISizeConstant.THREE_START_BUTTON_ROW_WIDTH_OTHER)
-          .justifyContent(FlexAlign.SpaceBetween)
-
+      HdsTabs({
+        controller: this.hdsTabsController,
+        index : 1
+      }) {
+        TabContent() {
+          YearView({
+            currentIndex: this.currentIndexInYearView,
+            currentIndexInTotalPage: this.currentIndex,
+            currentYearInMonthView : this.currentYearInMonthView,
+            currentMonthInMonthView : this.currentMonthInMonthView
+          })
         }
-        .width(BasicConstant.FULL_WIDTH)
-        .height(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ?
-          StartArkUISizeConstant.START_TITLE_BAR_HEIGHT_LG : StartArkUISizeConstant.START_TITLE_BAR_HEIGHT_OTHER)
-        .justifyContent(FlexAlign.SpaceBetween)
+        .tabBar(this.tabsBuilder('年', StartArkUISizeConstant.TABS_INDEX_YEAR))
 
-        Tabs({
-          barPosition: BarPosition.Start,
-          index: StartArkUISizeConstant.TABS_BEGGING_INDEX,
-          controller: this.tabsController
-        }) {
-          TabContent() {
-            YearView({
-              currentIndex: this.currentIndexInYearView,
-              currentIndexInTotalPage: this.currentIndex,
-              currentYearInMonthView : this.currentYearInMonthView,
-              currentMonthInMonthView : this.currentMonthInMonthView
-            })
-          }
-          .tabBar(this.tabsBuilder('年', StartArkUISizeConstant.TABS_INDEX_YEAR))
-
-          TabContent() {
-            MonthView()
-          }
-          .tabBar(this.tabsBuilder('月', StartArkUISizeConstant.TABS_INDEX_MONTH))
-
-          TabContent() {
-            WeekView({ currentIndex: this.currentIndexInWeekView })
-          }
-          .tabBar(this.tabsBuilder('周', StartArkUISizeConstant.TABS_INDEX_WEEK))
-
-          TabContent() {
-            DayView({ currentIndex: this.currentIndexInDayView })
-          }
-          .tabBar(this.tabsBuilder('日', StartArkUISizeConstant.TABS_INDEX_DAY))
-
-          // TabContent(){
-          //   CourseSchedule()
-          // }
-          // .tabBar(this.tabsBuilder('课表',4))
+        TabContent() {
+          MonthView()
         }
-        .vertical(false)
-        .barMode(BarMode.Fixed)
-        .width(BasicConstant.FULL_WIDTH)
-        .barWidth(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? BasicConstant.HALF_WIDTH :
-          BasicConstant.FULL_WIDTH)
-        .margin({ top: this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ?
-          StartArkUISizeConstant.TABS_MARGIN_TOP_LG : StartArkUISizeConstant.TABS_MARGIN_TOP_OTHER })
-        .scrollable(false)
-        .onAnimationStart((fromIndex : number,toIndex : number) => {
-          this.currentIndex = toIndex;
-          AppStorage.setOrCreate('wholeIndex',this.currentIndex);
-        })
-        .animationCurve(Curve.Smooth)
-        .animationDuration(BasicConstant.ANIMATION_DURATION_SHORT)
+        .tabBar(this.tabsBuilder('月', StartArkUISizeConstant.TABS_INDEX_MONTH))
+
+        TabContent() {
+          WeekView({ currentIndex: this.currentIndexInWeekView })
+        }
+        .tabBar(this.tabsBuilder('周', StartArkUISizeConstant.TABS_INDEX_WEEK))
+
+        TabContent() {
+          DayView({ currentIndex: this.currentIndexInDayView })
+        }
+        .tabBar(this.tabsBuilder('日', StartArkUISizeConstant.TABS_INDEX_DAY))
       }
+      .vertical(false)
       .width(BasicConstant.FULL_WIDTH)
-      .height(BasicConstant.FULL_HEIGHT)
+      .barHeight(40)
+      .layoutWeight(1)
+      .barOverlap(true)
+      .barPosition(BarPosition.End)
+      .barFloatingStyle({
+        barBottomMargin : 670,
+        adaptToHandedness : true,
+        systemMaterialEffect : {
+          materialType : hdsMaterial.MaterialType.ADAPTIVE,
+          materialLevel : hdsMaterial.MaterialLevel.ADAPTIVE
+        },
+        lightColor : this.themeColor
+      })
+      .expandSafeArea([SafeAreaType.SYSTEM],[SafeAreaEdge.TOP])
+      .onAnimationStart((fromIndex : number,toIndex : number) => {
+        this.currentIndex = toIndex;
+        AppStorage.setOrCreate('wholeIndex',this.currentIndex);
+      })
+
+      HdsNavigation(){}
+      .width('100%')
+      .height('100%')
+      .mode(NavigationMode.Stack)
+      .padding({top : this.getUIContext().px2vp(this.topStatusBarHeight)})
+      .hitTestBehavior(HitTestMode.Transparent)
+      .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM],[LayoutSafeAreaEdge.TOP])
+      .titleBar({
+        style : {
+          scrollEffectOpts : {
+            enableScrollEffect : false,
+            scrollEffectType : ScrollEffectType.GRADIENT_BLUR,
+          },
+          systemMaterialEffect : {
+            materialType : hdsMaterial.MaterialType.ADAPTIVE,
+            materialLevel : hdsMaterial.MaterialLevel.ADAPTIVE
+          }
+        },
+        content : {
+          title : {
+            mainTitle : this.mainTitle(),
+            mainTitleSize : this.currentBreakpoint == BreakpointConstant.BREAKPOINT_LG ? 35 :
+              this.currentBreakpoint == BreakpointConstant.BREAKPOINT_MD ? 30 : 25,
+          },
+          menu : this.menu
+        },
+        enableHoverMode : true,
+      })
+      .titleMode(HdsNavigationTitleMode.MINI)
+      .hideBackButton(true)
+
+      Column(){}
+      .width('100%')
+      .height(this.getUIContext().px2vp(this.topStatusBarHeight))
+      .alignRules({
+        left : {anchor : '__container__',align : HorizontalAlign.Start},
+        top : {anchor : '__container__',align : VerticalAlign.Top}
+      })
+      .backgroundColor('rgba(240,240,240,0.82)')
+      .backdropBlur(11)
 
       if(this.isSetChangingNewTaskButton && this.currentIndex != 0){
         Button(){
@@ -601,7 +612,6 @@ export struct StartCalendar {
     .padding({
       left: StartArkUISizeConstant.START_WHOLE_PADDING_LEFT,
       right: StartArkUISizeConstant.START_WHOLE_PADDING_RIGHT,
-      top : this.getUIContext().px2vp(this.topStatusBarHeight)
     })
     .backgroundColor($r('app.color.backgroundcolor'))
     .id('adjustSheetDialog')

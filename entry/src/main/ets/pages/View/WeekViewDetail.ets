@@ -51,6 +51,7 @@ export struct WeekViewDetail{
   @State currentDailyInfo : DailyInfo = this.weekDataSource.getData(24000).getWeekData()[0];
   private festivalList : Array<Festival_SolarTerms> = [];
   private solarTermsList : Array<Festival_SolarTerms> = [];
+  private weekArray: Array<string> = ['日', '一', '二', '三', '四', '五', '六'];
   @StorageProp('isExportCourseSchedule') isExportCourseSchedule : boolean = false;
   @StorageProp('isExportExamSchedule') isExportExamSchedule : boolean = false;
 
@@ -170,6 +171,22 @@ export struct WeekViewDetail{
 
   build() {
     Column({space : ViewArkUIConstant.COMPONENT_GAP_SPACE}){
+      Row() {
+        ForEach(this.weekArray, (item: string, index: number) => {
+          Text(item)
+            .fontSize(this.currentBreakpoint == BreakpointConstant.BREAKPOINT_SM ?
+              ViewArkUIConstant.WEEK_ARRAY_FONTSIZE_SM : this.currentBreakpoint == BreakpointConstant.BREAKPOINT_MD
+                ? ViewArkUIConstant.WEEK_ARRAY_FONTSIZE_MD : ViewArkUIConstant.WEEK_ARRAY_FONTSIZE_LG)
+            .fontColor(index == ViewArkUIConstant.WEEK_ARRAY_SUNDAY_INDEX ||
+              index == ViewArkUIConstant.WEEK_ARRAY_SATURDAY_INDEX ? $r('app.color.gray_deep') : Color.Black)
+        }, (item: string) => item)
+      }
+      .width(BasicConstant.FULL_WIDTH)
+      .height(ViewArkUIConstant.WEEK_ARRAY_HEIGHT)
+      .backgroundColor($r('app.color.backgroundcolor'))
+      .zIndex(10)
+      .justifyContent(FlexAlign.SpaceAround)
+
       Grid() {
         ForEach(this.perWeekInfo.getWeekData(), (item: DailyInfo) => {
           GridItem() {
